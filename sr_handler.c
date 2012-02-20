@@ -102,7 +102,7 @@ int handle_ip_pkt(struct sr_instance* sr, struct sr_ip_pkt* Pkt, char* interface
       return -1;
    }
    
-   if(Pkt->header->ip_ttl < 1){
+   if(Pkt->header->ip_ttl < 2){
       printf("@@@@@@@@@@@@@@@@@@@@@@    TTL has expired so we will send back an ICMP\n");
       return -1;
    }
@@ -192,7 +192,6 @@ int create_ICMP_pkt(struct sr_instance* sr, char* interface, uint32_t dstIP, uin
    return rtn;
 }
 
-
 /*--------------------------------------------------------------------- 
  * Method: make_and_send(struct sr_instance sr, char * interface, uint32_t dstIP, uint8_t* payld)
  *
@@ -242,4 +241,75 @@ int make_and_send(struct sr_instance* sr, char * interface, uint32_t dstIP, uint
    
 }
 
-//I was changed 
+struct send_list* send_list_new(){
+   struct send_list* list = (struct send_list*) malloc_or_die(sizeof(struct send_list));
+   list->next = NULL;
+   return list;
+}
+
+void send_list_add(struct send_list** list, uint32_t dstIP, uint8_t* payload, unsigned int len, char* iface, uint16_t type, time_t now){
+   assert(*list);
+   assert(payload);
+   assert(iface);
+   
+   struct send_list* new_list = (struct send_list*) malloc_or_die(sizeof(struct send_list));
+
+   new_list->IP = dstIP;
+   new_list->iface = iface;
+   new_list->payload = payload;
+   new_list->len = len;
+   new_list->added = now;
+   new_list->type = type;
+   new_list->next = *list;
+   *list= new_list;
+}
+
+int send_list_send(struct send_list* list, struct sr_instance* sr, uint32_t* dstIP, uint8_t* dstMAC){
+   assert(sr);
+   int success;
+   int count = 0;
+   
+   while(list != NULL){
+      if(list->IP == dstIP){
+         //break here -> list has all the bits I need
+         // NO - I have to keep searching in case tehre are multiple entries.
+         //solution spawn another func then return here
+         success = send_packet(sr, list->iface, dstMAC, list->payload, list->len, list->type);
+         count++;
+      }
+      list = list->next;
+   }
+   if(count != 0){
+      //this is where I send the packet
+      printf("***************     %s  I sent at least %d packets, and success is %d\n", __func__, count, success);
+      return 1;
+   }
+   return 0;
+}
+
+int send_packet(struct sr_instance* sr, char* iface, uint8_t* dstMAC, uint8_t* payload, unsigned int len, uint16_t type){
+      assert(sr);
+      assert(payload);
+      assert(iface);
+      uint8_t* packet = (uint8_t*)malloc_or_die(len + 14);
+      struct sr_ethernet_hdr* tmpHdr = (struct sr_ethernet_hdr*) malloc_or_die(14* sizeof(uint8_t));
+      struct sr_vns_if* interface = sr_get_interface(sr, iface);
+      
+      mac_copy(dstMAC, tmpHdr->ether_dhost);
+      mac_copy(interface->addr, tmpHdr->ether_shost);
+      tmpHdr->ether_type = htons(type);
+      memcpy(packet, tmpHdr, 14);
+      packet = packet + 14;
+      memcpy(packet, payload, len);
+      packet = packet - 14;
+      if((sr_integ_low_level_output(sr, packet, (unsigned int)(len + 14), iface)) == 0){
+         printf("**********         %s   successfully sent a packet reply\n", __func__);
+         return 1;
+      }
+      else {
+         printf("\n @@@@@@@@@@@@@@@@@@@@        @@@@@@@@@@@@@@@@     %s  sending packet failed?\n", __func__);
+         return 0;
+      }
+      return -1;
+}
+

@@ -11,6 +11,7 @@
 
 
 void mac_copy(uint8_t in[], uint8_t out[]);
+void mac_broadcast(uint8_t[]);
 
 uint8_t* array_cpy(void*, unsigned int);
 

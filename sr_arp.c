@@ -4,6 +4,7 @@
 #include <string.h>
 #include "sr_if.h"
 #include "sr_router.h"
+#include "sr_handler.h"
 
 /*
    creates a new arp_cache_list and returns a pointer
@@ -254,6 +255,7 @@ int arp_lookup(struct sr_instance * sr, char* interface, uint8_t* payload, uint3
    struct sr_vns_if* intf = sr_get_interface(sr, interface);
    struct sr_router* sub = (struct sr_router*)sr_get_subsystem(sr);
 
+
    uint8_t src[6];
    mac_copy(intf->addr, ethHdr->ether_shost);
    
@@ -272,14 +274,52 @@ int arp_lookup(struct sr_instance * sr, char* interface, uint8_t* payload, uint3
 
 //need a send_arp_request fuction that also queues the raw ether packet ready to send
 
-int send_arp_request(struct sr_instance * sr, char* interface, uint8_t* payload, uint32_t dstIP, unsigned int len){
+int send_arp_request(struct sr_instance * sr, char* iface, uint8_t* payload, uint32_t dstIP, unsigned int len){
    // create an ARP request bound for 0xffffff/dstIP, source as in interface
    // add a send_list entry for payload, dstIP, now
    time_t now = time(NULL);
+   int rtn = 0;
    struct send_list* new = (struct send_list*)malloc_or_die(sizeof(struct send_list));
    struct sr_router* sub = (struct sr_router*)sr_get_subsystem(sr);
+   struct sr_arphdr* tmparp = (struct sr_arphdr*) malloc_or_die(28*sizeof(uint8_t));
+   struct sr_vns_if* intf = sr_get_interface(sr, iface);
+   int arp_pkt_len;
+   arp_pkt_len = ETH_HDR_LEN + sizeof(struct sr_arphdr);
    
+   //make the ARP header for an ARP request
    
+   tmparp->ar_hrd = htons(ARPHDR_ETHER);
+   tmparp->ar_pro = htons(ETHERTYPE_IP);
+   tmparp->ar_op = htons(ARP_REQUEST);  
+   tmparp->ar_hln = 6;
+   tmparp->ar_pln = 4;
+   mac_broadcast(tmparp->ar_tha);
+   tmparp->ar_tip = dstIP;
+   mac_copy(intf->addr, tmparp->ar_sha);
+   tmparp->ar_sip = intf->ip;
+   
+   struct sr_ethernet_hdr* tmpHdr = (struct sr_ethernet_hdr*) malloc_or_die(14* sizeof(uint8_t));
+   mac_copy(tmparp->ar_tha, tmpHdr->ether_dhost);
+   mac_copy(tmparp->ar_sha, tmpHdr->ether_shost);
+   tmpHdr->ether_type = htons(ETHERTYPE_ARP);
+
+   uint8_t* newPkt = (uint8_t*) malloc_or_die(arp_pkt_len);
+   newPkt = create_ethernet_frame(tmpHdr, tmparp, 28);
+   //pad the frame somehow?
+   //now we send it using sr_integ_low_level_output
+   if((sr_integ_low_level_output(sr, newPkt, (unsigned int)arp_pkt_len, iface)) == 0){
+      printf("**********         %s   successfully sent an ARP request\n", __func__);
+      rtn = 1;
+   }
+   else {
+      printf("\n @@@@@@@@@@@@@@@@@@@@        @@@@@@@@@@@@@@@@     %s  sending ARP request failed?\n", __func__);
+      rtn =  0;
+   }
+   
+   //before leaving make an entry in the send list   
+   send_list_add(sub->waitSend, dstIP, payload, len, iface, ETHERTYPE_ARP, now);
+   
+   return rtn;
 }
 
 

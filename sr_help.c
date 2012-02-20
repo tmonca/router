@@ -16,6 +16,14 @@ void mac_copy(uint8_t in[], uint8_t out[]){
   }
   printf("\n");
 }
+
+void mac_broadcast(uint8_t dst[]){
+  int i;
+  for(i = 0; i < 6; i++){
+     dst[i] = 0xff;
+  }
+}
+
 //replace all calls to the following with memcpy (Allowing for void* rtn type)
 
 uint8_t* array_cpy(void* in, unsigned int len){
