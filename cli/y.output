@@ -1,0 +1,2881 @@
+Grammar
+
+    0 $accept: Start $end
+
+    1 @1: /* empty */
+
+    2 Start: @1 Command T_NEWLINE
+
+    3 Command: ShowCommand
+    4        | ManipCommand
+    5        | ActionCommand
+    6        | OptionCommand
+
+    7 @2: /* empty */
+
+    8 Command: @2 error
+    9        | /* empty */
+
+   10 ShowCommand: T_SHOW ShowType
+
+   11 ShowType: /* empty */
+   12         | T_HW ShowTypeHW
+   13         | T_IP ShowTypeIP
+   14         | T_OSPF ShowTypeOSPF
+   15         | T_VNS ShowTypeVNS
+   16         | T_OPTION ShowTypeOption
+   17         | HelpOrQ
+
+   18 ShowTypeHW: /* empty */
+   19           | T_ABOUT
+   20           | T_ABOUT TMIorQ
+   21           | T_ARP
+   22           | T_ARP TMIorQ
+   23           | T_INTF
+   24           | T_INTF TMIorQ
+   25           | T_ROUTE
+   26           | T_ROUTE TMIorQ
+   27           | WrongOrQ
+
+   28 ShowTypeIP: /* empty */
+   29           | T_ARP
+   30           | T_ARP TMIorQ
+   31           | T_INTF
+   32           | T_INTF TMIorQ
+   33           | T_ROUTE
+   34           | T_ROUTE TMIorQ
+   35           | WrongOrQ
+
+   36 ShowTypeOSPF: /* empty */
+   37             | T_NEIGHBORS
+   38             | T_NEIGHBORS TMIorQ
+   39             | T_TOPOLOGY
+   40             | T_TOPOLOGY TMIorQ
+   41             | WrongOrQ
+
+   42 TMIorQ: HelpOrQ
+
+   43 @3: /* empty */
+
+   44 TMIorQ: @3 error
+
+   45 WrongOrQ: HelpOrQ
+
+   46 @4: /* empty */
+
+   47 WrongOrQ: @4 error
+
+   48 ShowTypeVNS: /* empty */
+   49            | T_LHOST
+   50            | T_LHOST TMIorQ
+   51            | T_TOPOLOGY
+   52            | T_TOPOLOGY TMIorQ
+   53            | T_USER
+   54            | T_USER TMIorQ
+   55            | T_VHOST
+   56            | T_VHOST TMIorQ
+   57            | WrongOrQ
+
+   58 ManipCommand: T_IP ManipTypeIP
+
+   59 ManipTypeIP: T_ARP ManipTypeIPARP
+   60            | T_INTF ManipTypeIPInterface
+   61            | T_OSPF ManipTypeIPOSPF
+   62            | T_ROUTE ManipTypeIPRoute
+
+   63 ManipTypeIPARP: WrongOrQ
+   64               | T_ADD AddTransOrQ
+   65               | T_DEL DelTransOrQ
+   66               | T_PURGE
+   67               | T_PURGE TMIorQ
+   68               | T_PURGE T_DYNAMIC
+   69               | T_PURGE T_DYNAMIC TMIorQ
+   70               | T_PURGE T_STATIC
+   71               | T_PURGE T_STATIC TMIorQ
+
+   72 AddTransOrQ: HelpOrQ
+
+   73 @5: /* empty */
+
+   74 AddTransOrQ: @5 error
+
+   75 @6: /* empty */
+
+   76 AddTransOrQ: TAV_IP @6 error
+   77            | TAV_IP TAV_MAC
+   78            | TAV_IP TAV_MAC TMIorQ
+
+   79 DelTransOrQ: HelpOrQ
+
+   80 @7: /* empty */
+
+   81 DelTransOrQ: @7 error
+   82            | TAV_IP
+   83            | TAV_IP TMIorQ
+
+   84 ManipTypeIPInterface: HelpOrQ
+
+   85 @8: /* empty */
+
+   86 ManipTypeIPInterface: @8 error
+   87                     | TAV_STR WrongOrQ
+
+   88 @9: /* empty */
+
+   89 ManipTypeIPInterface: TAV_STR TAV_IP @9 error
+   90                     | TAV_STR TAV_IP TAV_IP
+   91                     | TAV_STR TAV_IP TAV_IP TMIorQ
+   92                     | TAV_STR T_UP
+   93                     | TAV_STR T_UP TMIorQ
+   94                     | TAV_STR T_DOWN
+   95                     | TAV_STR T_DOWN TMIorQ
+
+   96 ManipTypeIPOSPF: WrongOrQ
+   97                | T_UP
+   98                | T_UP TMIorQ
+   99                | T_DOWN
+  100                | T_DOWN TMIorQ
+
+  101 ManipTypeIPRoute: WrongOrQ
+  102                 | T_ADD RouteAddOrQ
+  103                 | T_DEL RouteDelOrQ
+  104                 | T_PURGE
+  105                 | T_PURGE T_DYNAMIC
+  106                 | T_PURGE T_STATIC
+  107                 | T_PURGE TMIorQ
+
+  108 RouteAddOrQ: HelpOrQ
+
+  109 @10: /* empty */
+
+  110 RouteAddOrQ: @10 error
+
+  111 @11: /* empty */
+
+  112 RouteAddOrQ: TAV_IP @11 error
+
+  113 @12: /* empty */
+
+  114 RouteAddOrQ: TAV_IP TAV_IP @12 error
+
+  115 @13: /* empty */
+
+  116 RouteAddOrQ: TAV_IP TAV_IP TAV_IP @13 error
+  117            | TAV_IP TAV_IP TAV_IP TAV_STR
+  118            | TAV_IP TAV_IP TAV_IP TAV_STR TMIorQ
+
+  119 RouteDelOrQ: HelpOrQ
+
+  120 @14: /* empty */
+
+  121 RouteDelOrQ: @14 error
+
+  122 @15: /* empty */
+
+  123 RouteDelOrQ: TAV_IP @15 error
+  124            | TAV_IP TAV_IP
+  125            | TAV_IP TAV_IP TMIorQ
+
+  126 ActionCommand: T_PING ActionPing
+  127              | T_TRACE ActionTrace
+  128              | ActionDate
+  129              | ActionExit
+  130              | ActionShutdown
+  131              | ActionHelp
+
+  132 ActionPing: HelpOrQ
+
+  133 @16: /* empty */
+
+  134 ActionPing: @16 error
+  135           | TAV_IP
+  136           | T_FLOOD TAV_IP
+  137           | T_FLOOD TAV_IP TMIorQ
+  138           | T_FLOOD TAV_INT TAV_IP
+  139           | T_FLOOD TAV_INT TAV_IP TMIorQ
+  140           | TAV_IP TMIorQ
+
+  141 ActionTrace: HelpOrQ
+
+  142 @17: /* empty */
+
+  143 ActionTrace: @17 error
+  144            | TAV_IP
+  145            | TAV_IP TMIorQ
+
+  146 ActionDate: T_DATE
+  147           | T_DATE TMIorQ
+
+  148 ActionExit: T_EXIT
+  149           | T_EXIT TMIorQ
+
+  150 ActionShutdown: T_SHUTDOWN
+  151               | T_SHUTDOWN TMIorQ
+
+  152 ActionHelp: HelpOrQ
+  153           | HelpOrQ T_ALL
+
+  154 @18: /* empty */
+
+  155 ActionHelp: HelpOrQ T_ALL @18 error
+  156           | HelpOrQ T_SHOW
+  157           | HelpOrQ T_SHOW T_HW
+  158           | HelpOrQ T_SHOW T_HW T_ABOUT
+  159           | HelpOrQ T_SHOW T_HW T_ARP
+  160           | HelpOrQ T_SHOW T_HW T_INTF
+  161           | HelpOrQ T_SHOW T_HW T_ROUTE
+  162           | HelpOrQ T_SHOW T_IP
+  163           | HelpOrQ T_SHOW T_IP T_ARP
+  164           | HelpOrQ T_SHOW T_IP T_INTF
+  165           | HelpOrQ T_SHOW T_IP T_ROUTE
+  166           | HelpOrQ T_SHOW T_OPTION
+  167           | HelpOrQ T_SHOW T_OPTION T_VERBOSE
+  168           | HelpOrQ T_SHOW T_OSPF
+  169           | HelpOrQ T_SHOW T_OSPF T_NEIGHBORS
+  170           | HelpOrQ T_SHOW T_OSPF T_TOPOLOGY
+  171           | HelpOrQ T_SHOW T_VNS
+  172           | HelpOrQ T_SHOW T_VNS T_LHOST
+  173           | HelpOrQ T_SHOW T_VNS T_TOPOLOGY
+  174           | HelpOrQ T_SHOW T_VNS T_USER
+  175           | HelpOrQ T_SHOW T_VNS T_VHOST
+  176           | HelpOrQ T_IP
+  177           | HelpOrQ T_IP T_ARP
+  178           | HelpOrQ T_IP T_ARP T_ADD
+  179           | HelpOrQ T_IP T_ARP T_DEL
+  180           | HelpOrQ T_IP T_ARP T_PURGE
+  181           | HelpOrQ T_IP T_ARP T_PURGE T_DYNAMIC
+  182           | HelpOrQ T_IP T_ARP T_PURGE T_STATIC
+  183           | HelpOrQ T_IP T_INTF
+  184           | HelpOrQ T_IP T_INTF T_DOWN
+  185           | HelpOrQ T_IP T_INTF T_UP
+  186           | HelpOrQ T_IP T_ROUTE
+  187           | HelpOrQ T_IP T_ROUTE T_ADD
+  188           | HelpOrQ T_IP T_ROUTE T_DEL
+  189           | HelpOrQ T_IP T_ROUTE T_PURGE
+  190           | HelpOrQ T_IP T_ROUTE T_DYNAMIC
+  191           | HelpOrQ T_IP T_ROUTE T_STATIC
+  192           | HelpOrQ T_DATE
+  193           | HelpOrQ T_EXIT
+  194           | HelpOrQ T_PING
+  195           | HelpOrQ T_SHUTDOWN
+  196           | HelpOrQ T_TRACE
+  197           | HelpOrQ T_SET
+  198           | HelpOrQ T_SET T_VERBOSE
+  199           | HelpOrQ T_UNSET
+  200           | HelpOrQ T_UNSET T_VERBOSE
+
+  201 @19: /* empty */
+
+  202 ActionHelp: HelpOrQ @19 error
+
+  203 HelpOrQ: T_HELP
+  204        | T_QUESTION
+
+  205 OptionCommand: OptionAction Option
+
+  206 OptionAction: T_SET
+  207             | T_UNSET
+
+  208 Option: HelpOrQ
+  209       | T_VERBOSE
+  210       | T_VERBOSE TMIorQ
+
+  211 ShowTypeOption: /* empty */
+  212               | T_VERBOSE
+  213               | T_VERBOSE TMIorQ
+  214               | WrongOrQ
+
+
+Terminals, with rules where they appear
+
+$end (0) 0
+error (256) 8 44 47 74 76 81 86 89 110 112 114 116 121 123 134 143
+    155 202
+T_SHOW (258) 10 156 157 158 159 160 161 162 163 164 165 166 167 168
+    169 170 171 172 173 174 175
+T_QUESTION (259) 204
+T_NEWLINE (260) 2
+T_ALL (261) 153 155
+T_VNS (262) 15 171 172 173 174 175
+T_USER (263) 53 54 174
+T_VHOST (264) 55 56 175
+T_LHOST (265) 49 50 172
+T_TOPOLOGY (266) 39 40 51 52 170 173
+T_IP (267) 13 58 162 163 164 165 176 177 178 179 180 181 182 183 184
+    185 186 187 188 189 190 191
+T_ROUTE (268) 25 26 33 34 62 161 165 186 187 188 189 190 191
+T_INTF (269) 23 24 31 32 60 160 164 183 184 185
+T_ARP (270) 21 22 29 30 59 159 163 177 178 179 180 181 182
+T_OSPF (271) 14 61 168 169 170
+T_HW (272) 12 157 158 159 160 161
+T_NEIGHBORS (273) 37 38 169
+T_ADD (274) 64 102 178 187
+T_DEL (275) 65 103 179 188
+T_UP (276) 92 93 97 98 185
+T_DOWN (277) 94 95 99 100 184
+T_PURGE (278) 66 67 68 69 70 71 104 105 106 107 180 181 182 189
+T_STATIC (279) 70 71 106 182 191
+T_DYNAMIC (280) 68 69 105 181 190
+T_ABOUT (281) 19 20 158
+T_PING (282) 126 194
+T_TRACE (283) 127 196
+T_HELP (284) 203
+T_EXIT (285) 148 149 193
+T_SHUTDOWN (286) 150 151 195
+T_FLOOD (287) 136 137 138 139
+T_SET (288) 197 198 206
+T_UNSET (289) 199 200 207
+T_OPTION (290) 16 166 167
+T_VERBOSE (291) 167 198 200 209 210 212 213
+T_DATE (292) 146 147 192
+TAV_INT (293) 138 139
+TAV_IP (294) 76 77 78 82 83 89 90 91 112 114 116 117 118 123 124 125
+    135 136 137 138 139 140 144 145
+TAV_MAC (295) 77 78
+TAV_STR (296) 87 89 90 91 92 93 94 95 117 118
+
+
+Nonterminals, with rules where they appear
+
+$accept (42)
+    on left: 0
+Start (43)
+    on left: 2, on right: 0
+@1 (44)
+    on left: 1, on right: 2
+Command (45)
+    on left: 3 4 5 6 8 9, on right: 2
+@2 (46)
+    on left: 7, on right: 8
+ShowCommand (47)
+    on left: 10, on right: 3
+ShowType (48)
+    on left: 11 12 13 14 15 16 17, on right: 10
+ShowTypeHW (49)
+    on left: 18 19 20 21 22 23 24 25 26 27, on right: 12
+ShowTypeIP (50)
+    on left: 28 29 30 31 32 33 34 35, on right: 13
+ShowTypeOSPF (51)
+    on left: 36 37 38 39 40 41, on right: 14
+TMIorQ (52)
+    on left: 42 44, on right: 20 22 24 26 30 32 34 38 40 50 52 54 56
+    67 69 71 78 83 91 93 95 98 100 107 118 125 137 139 140 145 147
+    149 151 210 213
+@3 (53)
+    on left: 43, on right: 44
+WrongOrQ (54)
+    on left: 45 47, on right: 27 35 41 57 63 87 96 101 214
+@4 (55)
+    on left: 46, on right: 47
+ShowTypeVNS (56)
+    on left: 48 49 50 51 52 53 54 55 56 57, on right: 15
+ManipCommand (57)
+    on left: 58, on right: 4
+ManipTypeIP (58)
+    on left: 59 60 61 62, on right: 58
+ManipTypeIPARP (59)
+    on left: 63 64 65 66 67 68 69 70 71, on right: 59
+AddTransOrQ (60)
+    on left: 72 74 76 77 78, on right: 64
+@5 (61)
+    on left: 73, on right: 74
+@6 (62)
+    on left: 75, on right: 76
+DelTransOrQ (63)
+    on left: 79 81 82 83, on right: 65
+@7 (64)
+    on left: 80, on right: 81
+ManipTypeIPInterface (65)
+    on left: 84 86 87 89 90 91 92 93 94 95, on right: 60
+@8 (66)
+    on left: 85, on right: 86
+@9 (67)
+    on left: 88, on right: 89
+ManipTypeIPOSPF (68)
+    on left: 96 97 98 99 100, on right: 61
+ManipTypeIPRoute (69)
+    on left: 101 102 103 104 105 106 107, on right: 62
+RouteAddOrQ (70)
+    on left: 108 110 112 114 116 117 118, on right: 102
+@10 (71)
+    on left: 109, on right: 110
+@11 (72)
+    on left: 111, on right: 112
+@12 (73)
+    on left: 113, on right: 114
+@13 (74)
+    on left: 115, on right: 116
+RouteDelOrQ (75)
+    on left: 119 121 123 124 125, on right: 103
+@14 (76)
+    on left: 120, on right: 121
+@15 (77)
+    on left: 122, on right: 123
+ActionCommand (78)
+    on left: 126 127 128 129 130 131, on right: 5
+ActionPing (79)
+    on left: 132 134 135 136 137 138 139 140, on right: 126
+@16 (80)
+    on left: 133, on right: 134
+ActionTrace (81)
+    on left: 141 143 144 145, on right: 127
+@17 (82)
+    on left: 142, on right: 143
+ActionDate (83)
+    on left: 146 147, on right: 128
+ActionExit (84)
+    on left: 148 149, on right: 129
+ActionShutdown (85)
+    on left: 150 151, on right: 130
+ActionHelp (86)
+    on left: 152 153 155 156 157 158 159 160 161 162 163 164 165 166
+    167 168 169 170 171 172 173 174 175 176 177 178 179 180 181 182
+    183 184 185 186 187 188 189 190 191 192 193 194 195 196 197 198
+    199 200 202, on right: 131
+@18 (87)
+    on left: 154, on right: 155
+@19 (88)
+    on left: 201, on right: 202
+HelpOrQ (89)
+    on left: 203 204, on right: 17 42 45 72 79 84 108 119 132 141 152
+    153 155 156 157 158 159 160 161 162 163 164 165 166 167 168 169
+    170 171 172 173 174 175 176 177 178 179 180 181 182 183 184 185
+    186 187 188 189 190 191 192 193 194 195 196 197 198 199 200 202
+    208
+OptionCommand (90)
+    on left: 205, on right: 6
+OptionAction (91)
+    on left: 206 207, on right: 205
+Option (92)
+    on left: 208 209 210, on right: 205
+ShowTypeOption (93)
+    on left: 211 212 213 214, on right: 16
+
+
+state 0
+
+    0 $accept: . Start $end
+
+    $default  reduce using rule 1 (@1)
+
+    Start  go to state 1
+    @1     go to state 2
+
+
+state 1
+
+    0 $accept: Start . $end
+
+    $end  shift, and go to state 3
+
+
+state 2
+
+    2 Start: @1 . Command T_NEWLINE
+
+    T_SHOW      shift, and go to state 4
+    T_QUESTION  shift, and go to state 5
+    T_IP        shift, and go to state 6
+    T_PING      shift, and go to state 7
+    T_TRACE     shift, and go to state 8
+    T_HELP      shift, and go to state 9
+    T_EXIT      shift, and go to state 10
+    T_SHUTDOWN  shift, and go to state 11
+    T_SET       shift, and go to state 12
+    T_UNSET     shift, and go to state 13
+    T_DATE      shift, and go to state 14
+
+    T_NEWLINE  reduce using rule 9 (Command)
+    $default   reduce using rule 7 (@2)
+
+    Command         go to state 15
+    @2              go to state 16
+    ShowCommand     go to state 17
+    ManipCommand    go to state 18
+    ActionCommand   go to state 19
+    ActionDate      go to state 20
+    ActionExit      go to state 21
+    ActionShutdown  go to state 22
+    ActionHelp      go to state 23
+    HelpOrQ         go to state 24
+    OptionCommand   go to state 25
+    OptionAction    go to state 26
+
+
+state 3
+
+    0 $accept: Start $end .
+
+    $default  accept
+
+
+state 4
+
+   10 ShowCommand: T_SHOW . ShowType
+
+    T_QUESTION  shift, and go to state 5
+    T_VNS       shift, and go to state 27
+    T_IP        shift, and go to state 28
+    T_OSPF      shift, and go to state 29
+    T_HW        shift, and go to state 30
+    T_HELP      shift, and go to state 9
+    T_OPTION    shift, and go to state 31
+
+    $default  reduce using rule 11 (ShowType)
+
+    ShowType  go to state 32
+    HelpOrQ   go to state 33
+
+
+state 5
+
+  204 HelpOrQ: T_QUESTION .
+
+    $default  reduce using rule 204 (HelpOrQ)
+
+
+state 6
+
+   58 ManipCommand: T_IP . ManipTypeIP
+
+    T_ROUTE  shift, and go to state 34
+    T_INTF   shift, and go to state 35
+    T_ARP    shift, and go to state 36
+    T_OSPF   shift, and go to state 37
+
+    ManipTypeIP  go to state 38
+
+
+state 7
+
+  126 ActionCommand: T_PING . ActionPing
+
+    T_QUESTION  shift, and go to state 5
+    T_HELP      shift, and go to state 9
+    T_FLOOD     shift, and go to state 39
+    TAV_IP      shift, and go to state 40
+
+    $default  reduce using rule 133 (@16)
+
+    ActionPing  go to state 41
+    @16         go to state 42
+    HelpOrQ     go to state 43
+
+
+state 8
+
+  127 ActionCommand: T_TRACE . ActionTrace
+
+    T_QUESTION  shift, and go to state 5
+    T_HELP      shift, and go to state 9
+    TAV_IP      shift, and go to state 44
+
+    $default  reduce using rule 142 (@17)
+
+    ActionTrace  go to state 45
+    @17          go to state 46
+    HelpOrQ      go to state 47
+
+
+state 9
+
+  203 HelpOrQ: T_HELP .
+
+    $default  reduce using rule 203 (HelpOrQ)
+
+
+state 10
+
+  148 ActionExit: T_EXIT .
+  149           | T_EXIT . TMIorQ
+
+    T_QUESTION  shift, and go to state 5
+    T_HELP      shift, and go to state 9
+
+    T_NEWLINE  reduce using rule 148 (ActionExit)
+    $default   reduce using rule 43 (@3)
+
+    TMIorQ   go to state 48
+    @3       go to state 49
+    HelpOrQ  go to state 50
+
+
+state 11
+
+  150 ActionShutdown: T_SHUTDOWN .
+  151               | T_SHUTDOWN . TMIorQ
+
+    T_QUESTION  shift, and go to state 5
+    T_HELP      shift, and go to state 9
+
+    T_NEWLINE  reduce using rule 150 (ActionShutdown)
+    $default   reduce using rule 43 (@3)
+
+    TMIorQ   go to state 51
+    @3       go to state 49
+    HelpOrQ  go to state 50
+
+
+state 12
+
+  206 OptionAction: T_SET .
+
+    $default  reduce using rule 206 (OptionAction)
+
+
+state 13
+
+  207 OptionAction: T_UNSET .
+
+    $default  reduce using rule 207 (OptionAction)
+
+
+state 14
+
+  146 ActionDate: T_DATE .
+  147           | T_DATE . TMIorQ
+
+    T_QUESTION  shift, and go to state 5
+    T_HELP      shift, and go to state 9
+
+    T_NEWLINE  reduce using rule 146 (ActionDate)
+    $default   reduce using rule 43 (@3)
+
+    TMIorQ   go to state 52
+    @3       go to state 49
+    HelpOrQ  go to state 50
+
+
+state 15
+
+    2 Start: @1 Command . T_NEWLINE
+
+    T_NEWLINE  shift, and go to state 53
+
+
+state 16
+
+    8 Command: @2 . error
+
+    error  shift, and go to state 54
+
+
+state 17
+
+    3 Command: ShowCommand .
+
+    $default  reduce using rule 3 (Command)
+
+
+state 18
+
+    4 Command: ManipCommand .
+
+    $default  reduce using rule 4 (Command)
+
+
+state 19
+
+    5 Command: ActionCommand .
+
+    $default  reduce using rule 5 (Command)
+
+
+state 20
+
+  128 ActionCommand: ActionDate .
+
+    $default  reduce using rule 128 (ActionCommand)
+
+
+state 21
+
+  129 ActionCommand: ActionExit .
+
+    $default  reduce using rule 129 (ActionCommand)
+
+
+state 22
+
+  130 ActionCommand: ActionShutdown .
+
+    $default  reduce using rule 130 (ActionCommand)
+
+
+state 23
+
+  131 ActionCommand: ActionHelp .
+
+    $default  reduce using rule 131 (ActionCommand)
+
+
+state 24
+
+  152 ActionHelp: HelpOrQ .
+  153           | HelpOrQ . T_ALL
+  155           | HelpOrQ . T_ALL @18 error
+  156           | HelpOrQ . T_SHOW
+  157           | HelpOrQ . T_SHOW T_HW
+  158           | HelpOrQ . T_SHOW T_HW T_ABOUT
+  159           | HelpOrQ . T_SHOW T_HW T_ARP
+  160           | HelpOrQ . T_SHOW T_HW T_INTF
+  161           | HelpOrQ . T_SHOW T_HW T_ROUTE
+  162           | HelpOrQ . T_SHOW T_IP
+  163           | HelpOrQ . T_SHOW T_IP T_ARP
+  164           | HelpOrQ . T_SHOW T_IP T_INTF
+  165           | HelpOrQ . T_SHOW T_IP T_ROUTE
+  166           | HelpOrQ . T_SHOW T_OPTION
+  167           | HelpOrQ . T_SHOW T_OPTION T_VERBOSE
+  168           | HelpOrQ . T_SHOW T_OSPF
+  169           | HelpOrQ . T_SHOW T_OSPF T_NEIGHBORS
+  170           | HelpOrQ . T_SHOW T_OSPF T_TOPOLOGY
+  171           | HelpOrQ . T_SHOW T_VNS
+  172           | HelpOrQ . T_SHOW T_VNS T_LHOST
+  173           | HelpOrQ . T_SHOW T_VNS T_TOPOLOGY
+  174           | HelpOrQ . T_SHOW T_VNS T_USER
+  175           | HelpOrQ . T_SHOW T_VNS T_VHOST
+  176           | HelpOrQ . T_IP
+  177           | HelpOrQ . T_IP T_ARP
+  178           | HelpOrQ . T_IP T_ARP T_ADD
+  179           | HelpOrQ . T_IP T_ARP T_DEL
+  180           | HelpOrQ . T_IP T_ARP T_PURGE
+  181           | HelpOrQ . T_IP T_ARP T_PURGE T_DYNAMIC
+  182           | HelpOrQ . T_IP T_ARP T_PURGE T_STATIC
+  183           | HelpOrQ . T_IP T_INTF
+  184           | HelpOrQ . T_IP T_INTF T_DOWN
+  185           | HelpOrQ . T_IP T_INTF T_UP
+  186           | HelpOrQ . T_IP T_ROUTE
+  187           | HelpOrQ . T_IP T_ROUTE T_ADD
+  188           | HelpOrQ . T_IP T_ROUTE T_DEL
+  189           | HelpOrQ . T_IP T_ROUTE T_PURGE
+  190           | HelpOrQ . T_IP T_ROUTE T_DYNAMIC
+  191           | HelpOrQ . T_IP T_ROUTE T_STATIC
+  192           | HelpOrQ . T_DATE
+  193           | HelpOrQ . T_EXIT
+  194           | HelpOrQ . T_PING
+  195           | HelpOrQ . T_SHUTDOWN
+  196           | HelpOrQ . T_TRACE
+  197           | HelpOrQ . T_SET
+  198           | HelpOrQ . T_SET T_VERBOSE
+  199           | HelpOrQ . T_UNSET
+  200           | HelpOrQ . T_UNSET T_VERBOSE
+  202           | HelpOrQ . @19 error
+
+    T_SHOW      shift, and go to state 55
+    T_ALL       shift, and go to state 56
+    T_IP        shift, and go to state 57
+    T_PING      shift, and go to state 58
+    T_TRACE     shift, and go to state 59
+    T_EXIT      shift, and go to state 60
+    T_SHUTDOWN  shift, and go to state 61
+    T_SET       shift, and go to state 62
+    T_UNSET     shift, and go to state 63
+    T_DATE      shift, and go to state 64
+
+    error     reduce using rule 201 (@19)
+    $default  reduce using rule 152 (ActionHelp)
+
+    @19  go to state 65
+
+
+state 25
+
+    6 Command: OptionCommand .
+
+    $default  reduce using rule 6 (Command)
+
+
+state 26
+
+  205 OptionCommand: OptionAction . Option
+
+    T_QUESTION  shift, and go to state 5
+    T_HELP      shift, and go to state 9
+    T_VERBOSE   shift, and go to state 66
+
+    HelpOrQ  go to state 67
+    Option   go to state 68
+
+
+state 27
+
+   15 ShowType: T_VNS . ShowTypeVNS
+
+    T_QUESTION  shift, and go to state 5
+    T_USER      shift, and go to state 69
+    T_VHOST     shift, and go to state 70
+    T_LHOST     shift, and go to state 71
+    T_TOPOLOGY  shift, and go to state 72
+    T_HELP      shift, and go to state 9
+
+    T_NEWLINE  reduce using rule 48 (ShowTypeVNS)
+    $default   reduce using rule 46 (@4)
+
+    WrongOrQ     go to state 73
+    @4           go to state 74
+    ShowTypeVNS  go to state 75
+    HelpOrQ      go to state 76
+
+
+state 28
+
+   13 ShowType: T_IP . ShowTypeIP
+
+    T_QUESTION  shift, and go to state 5
+    T_ROUTE     shift, and go to state 77
+    T_INTF      shift, and go to state 78
+    T_ARP       shift, and go to state 79
+    T_HELP      shift, and go to state 9
+
+    error     reduce using rule 46 (@4)
+    $default  reduce using rule 28 (ShowTypeIP)
+
+    ShowTypeIP  go to state 80
+    WrongOrQ    go to state 81
+    @4          go to state 74
+    HelpOrQ     go to state 76
+
+
+state 29
+
+   14 ShowType: T_OSPF . ShowTypeOSPF
+
+    T_QUESTION   shift, and go to state 5
+    T_TOPOLOGY   shift, and go to state 82
+    T_NEIGHBORS  shift, and go to state 83
+    T_HELP       shift, and go to state 9
+
+    error     reduce using rule 46 (@4)
+    $default  reduce using rule 36 (ShowTypeOSPF)
+
+    ShowTypeOSPF  go to state 84
+    WrongOrQ      go to state 85
+    @4            go to state 74
+    HelpOrQ       go to state 76
+
+
+state 30
+
+   12 ShowType: T_HW . ShowTypeHW
+
+    T_QUESTION  shift, and go to state 5
+    T_ROUTE     shift, and go to state 86
+    T_INTF      shift, and go to state 87
+    T_ARP       shift, and go to state 88
+    T_ABOUT     shift, and go to state 89
+    T_HELP      shift, and go to state 9
+
+    error     reduce using rule 46 (@4)
+    $default  reduce using rule 18 (ShowTypeHW)
+
+    ShowTypeHW  go to state 90
+    WrongOrQ    go to state 91
+    @4          go to state 74
+    HelpOrQ     go to state 76
+
+
+state 31
+
+   16 ShowType: T_OPTION . ShowTypeOption
+
+    T_QUESTION  shift, and go to state 5
+    T_HELP      shift, and go to state 9
+    T_VERBOSE   shift, and go to state 92
+
+    T_NEWLINE  reduce using rule 211 (ShowTypeOption)
+    $default   reduce using rule 46 (@4)
+
+    WrongOrQ        go to state 93
+    @4              go to state 74
+    HelpOrQ         go to state 76
+    ShowTypeOption  go to state 94
+
+
+state 32
+
+   10 ShowCommand: T_SHOW ShowType .
+
+    $default  reduce using rule 10 (ShowCommand)
+
+
+state 33
+
+   17 ShowType: HelpOrQ .
+
+    $default  reduce using rule 17 (ShowType)
+
+
+state 34
+
+   62 ManipTypeIP: T_ROUTE . ManipTypeIPRoute
+
+    T_QUESTION  shift, and go to state 5
+    T_ADD       shift, and go to state 95
+    T_DEL       shift, and go to state 96
+    T_PURGE     shift, and go to state 97
+    T_HELP      shift, and go to state 9
+
+    $default  reduce using rule 46 (@4)
+
+    WrongOrQ          go to state 98
+    @4                go to state 74
+    ManipTypeIPRoute  go to state 99
+    HelpOrQ           go to state 76
+
+
+state 35
+
+   60 ManipTypeIP: T_INTF . ManipTypeIPInterface
+
+    T_QUESTION  shift, and go to state 5
+    T_HELP      shift, and go to state 9
+    TAV_STR     shift, and go to state 100
+
+    $default  reduce using rule 85 (@8)
+
+    ManipTypeIPInterface  go to state 101
+    @8                    go to state 102
+    HelpOrQ               go to state 103
+
+
+state 36
+
+   59 ManipTypeIP: T_ARP . ManipTypeIPARP
+
+    T_QUESTION  shift, and go to state 5
+    T_ADD       shift, and go to state 104
+    T_DEL       shift, and go to state 105
+    T_PURGE     shift, and go to state 106
+    T_HELP      shift, and go to state 9
+
+    $default  reduce using rule 46 (@4)
+
+    WrongOrQ        go to state 107
+    @4              go to state 74
+    ManipTypeIPARP  go to state 108
+    HelpOrQ         go to state 76
+
+
+state 37
+
+   61 ManipTypeIP: T_OSPF . ManipTypeIPOSPF
+
+    T_QUESTION  shift, and go to state 5
+    T_UP        shift, and go to state 109
+    T_DOWN      shift, and go to state 110
+    T_HELP      shift, and go to state 9
+
+    $default  reduce using rule 46 (@4)
+
+    WrongOrQ         go to state 111
+    @4               go to state 74
+    ManipTypeIPOSPF  go to state 112
+    HelpOrQ          go to state 76
+
+
+state 38
+
+   58 ManipCommand: T_IP ManipTypeIP .
+
+    $default  reduce using rule 58 (ManipCommand)
+
+
+state 39
+
+  136 ActionPing: T_FLOOD . TAV_IP
+  137           | T_FLOOD . TAV_IP TMIorQ
+  138           | T_FLOOD . TAV_INT TAV_IP
+  139           | T_FLOOD . TAV_INT TAV_IP TMIorQ
+
+    TAV_INT  shift, and go to state 113
+    TAV_IP   shift, and go to state 114
+
+
+state 40
+
+  135 ActionPing: TAV_IP .
+  140           | TAV_IP . TMIorQ
+
+    T_QUESTION  shift, and go to state 5
+    T_HELP      shift, and go to state 9
+
+    T_NEWLINE  reduce using rule 135 (ActionPing)
+    $default   reduce using rule 43 (@3)
+
+    TMIorQ   go to state 115
+    @3       go to state 49
+    HelpOrQ  go to state 50
+
+
+state 41
+
+  126 ActionCommand: T_PING ActionPing .
+
+    $default  reduce using rule 126 (ActionCommand)
+
+
+state 42
+
+  134 ActionPing: @16 . error
+
+    error  shift, and go to state 116
+
+
+state 43
+
+  132 ActionPing: HelpOrQ .
+
+    $default  reduce using rule 132 (ActionPing)
+
+
+state 44
+
+  144 ActionTrace: TAV_IP .
+  145            | TAV_IP . TMIorQ
+
+    T_QUESTION  shift, and go to state 5
+    T_HELP      shift, and go to state 9
+
+    T_NEWLINE  reduce using rule 144 (ActionTrace)
+    $default   reduce using rule 43 (@3)
+
+    TMIorQ   go to state 117
+    @3       go to state 49
+    HelpOrQ  go to state 50
+
+
+state 45
+
+  127 ActionCommand: T_TRACE ActionTrace .
+
+    $default  reduce using rule 127 (ActionCommand)
+
+
+state 46
+
+  143 ActionTrace: @17 . error
+
+    error  shift, and go to state 118
+
+
+state 47
+
+  141 ActionTrace: HelpOrQ .
+
+    $default  reduce using rule 141 (ActionTrace)
+
+
+state 48
+
+  149 ActionExit: T_EXIT TMIorQ .
+
+    $default  reduce using rule 149 (ActionExit)
+
+
+state 49
+
+   44 TMIorQ: @3 . error
+
+    error  shift, and go to state 119
+
+
+state 50
+
+   42 TMIorQ: HelpOrQ .
+
+    $default  reduce using rule 42 (TMIorQ)
+
+
+state 51
+
+  151 ActionShutdown: T_SHUTDOWN TMIorQ .
+
+    $default  reduce using rule 151 (ActionShutdown)
+
+
+state 52
+
+  147 ActionDate: T_DATE TMIorQ .
+
+    $default  reduce using rule 147 (ActionDate)
+
+
+state 53
+
+    2 Start: @1 Command T_NEWLINE .
+
+    $default  reduce using rule 2 (Start)
+
+
+state 54
+
+    8 Command: @2 error .
+
+    $default  reduce using rule 8 (Command)
+
+
+state 55
+
+  156 ActionHelp: HelpOrQ T_SHOW .
+  157           | HelpOrQ T_SHOW . T_HW
+  158           | HelpOrQ T_SHOW . T_HW T_ABOUT
+  159           | HelpOrQ T_SHOW . T_HW T_ARP
+  160           | HelpOrQ T_SHOW . T_HW T_INTF
+  161           | HelpOrQ T_SHOW . T_HW T_ROUTE
+  162           | HelpOrQ T_SHOW . T_IP
+  163           | HelpOrQ T_SHOW . T_IP T_ARP
+  164           | HelpOrQ T_SHOW . T_IP T_INTF
+  165           | HelpOrQ T_SHOW . T_IP T_ROUTE
+  166           | HelpOrQ T_SHOW . T_OPTION
+  167           | HelpOrQ T_SHOW . T_OPTION T_VERBOSE
+  168           | HelpOrQ T_SHOW . T_OSPF
+  169           | HelpOrQ T_SHOW . T_OSPF T_NEIGHBORS
+  170           | HelpOrQ T_SHOW . T_OSPF T_TOPOLOGY
+  171           | HelpOrQ T_SHOW . T_VNS
+  172           | HelpOrQ T_SHOW . T_VNS T_LHOST
+  173           | HelpOrQ T_SHOW . T_VNS T_TOPOLOGY
+  174           | HelpOrQ T_SHOW . T_VNS T_USER
+  175           | HelpOrQ T_SHOW . T_VNS T_VHOST
+
+    T_VNS     shift, and go to state 120
+    T_IP      shift, and go to state 121
+    T_OSPF    shift, and go to state 122
+    T_HW      shift, and go to state 123
+    T_OPTION  shift, and go to state 124
+
+    $default  reduce using rule 156 (ActionHelp)
+
+
+state 56
+
+  153 ActionHelp: HelpOrQ T_ALL .
+  155           | HelpOrQ T_ALL . @18 error
+
+    error     reduce using rule 154 (@18)
+    $default  reduce using rule 153 (ActionHelp)
+
+    @18  go to state 125
+
+
+state 57
+
+  176 ActionHelp: HelpOrQ T_IP .
+  177           | HelpOrQ T_IP . T_ARP
+  178           | HelpOrQ T_IP . T_ARP T_ADD
+  179           | HelpOrQ T_IP . T_ARP T_DEL
+  180           | HelpOrQ T_IP . T_ARP T_PURGE
+  181           | HelpOrQ T_IP . T_ARP T_PURGE T_DYNAMIC
+  182           | HelpOrQ T_IP . T_ARP T_PURGE T_STATIC
+  183           | HelpOrQ T_IP . T_INTF
+  184           | HelpOrQ T_IP . T_INTF T_DOWN
+  185           | HelpOrQ T_IP . T_INTF T_UP
+  186           | HelpOrQ T_IP . T_ROUTE
+  187           | HelpOrQ T_IP . T_ROUTE T_ADD
+  188           | HelpOrQ T_IP . T_ROUTE T_DEL
+  189           | HelpOrQ T_IP . T_ROUTE T_PURGE
+  190           | HelpOrQ T_IP . T_ROUTE T_DYNAMIC
+  191           | HelpOrQ T_IP . T_ROUTE T_STATIC
+
+    T_ROUTE  shift, and go to state 126
+    T_INTF   shift, and go to state 127
+    T_ARP    shift, and go to state 128
+
+    $default  reduce using rule 176 (ActionHelp)
+
+
+state 58
+
+  194 ActionHelp: HelpOrQ T_PING .
+
+    $default  reduce using rule 194 (ActionHelp)
+
+
+state 59
+
+  196 ActionHelp: HelpOrQ T_TRACE .
+
+    $default  reduce using rule 196 (ActionHelp)
+
+
+state 60
+
+  193 ActionHelp: HelpOrQ T_EXIT .
+
+    $default  reduce using rule 193 (ActionHelp)
+
+
+state 61
+
+  195 ActionHelp: HelpOrQ T_SHUTDOWN .
+
+    $default  reduce using rule 195 (ActionHelp)
+
+
+state 62
+
+  197 ActionHelp: HelpOrQ T_SET .
+  198           | HelpOrQ T_SET . T_VERBOSE
+
+    T_VERBOSE  shift, and go to state 129
+
+    $default  reduce using rule 197 (ActionHelp)
+
+
+state 63
+
+  199 ActionHelp: HelpOrQ T_UNSET .
+  200           | HelpOrQ T_UNSET . T_VERBOSE
+
+    T_VERBOSE  shift, and go to state 130
+
+    $default  reduce using rule 199 (ActionHelp)
+
+
+state 64
+
+  192 ActionHelp: HelpOrQ T_DATE .
+
+    $default  reduce using rule 192 (ActionHelp)
+
+
+state 65
+
+  202 ActionHelp: HelpOrQ @19 . error
+
+    error  shift, and go to state 131
+
+
+state 66
+
+  209 Option: T_VERBOSE .
+  210       | T_VERBOSE . TMIorQ
+
+    T_QUESTION  shift, and go to state 5
+    T_HELP      shift, and go to state 9
+
+    T_NEWLINE  reduce using rule 209 (Option)
+    $default   reduce using rule 43 (@3)
+
+    TMIorQ   go to state 132
+    @3       go to state 49
+    HelpOrQ  go to state 50
+
+
+state 67
+
+  208 Option: HelpOrQ .
+
+    $default  reduce using rule 208 (Option)
+
+
+state 68
+
+  205 OptionCommand: OptionAction Option .
+
+    $default  reduce using rule 205 (OptionCommand)
+
+
+state 69
+
+   53 ShowTypeVNS: T_USER .
+   54            | T_USER . TMIorQ
+
+    T_QUESTION  shift, and go to state 5
+    T_HELP      shift, and go to state 9
+
+    T_NEWLINE  reduce using rule 53 (ShowTypeVNS)
+    $default   reduce using rule 43 (@3)
+
+    TMIorQ   go to state 133
+    @3       go to state 49
+    HelpOrQ  go to state 50
+
+
+state 70
+
+   55 ShowTypeVNS: T_VHOST .
+   56            | T_VHOST . TMIorQ
+
+    T_QUESTION  shift, and go to state 5
+    T_HELP      shift, and go to state 9
+
+    T_NEWLINE  reduce using rule 55 (ShowTypeVNS)
+    $default   reduce using rule 43 (@3)
+
+    TMIorQ   go to state 134
+    @3       go to state 49
+    HelpOrQ  go to state 50
+
+
+state 71
+
+   49 ShowTypeVNS: T_LHOST .
+   50            | T_LHOST . TMIorQ
+
+    T_QUESTION  shift, and go to state 5
+    T_HELP      shift, and go to state 9
+
+    T_NEWLINE  reduce using rule 49 (ShowTypeVNS)
+    $default   reduce using rule 43 (@3)
+
+    TMIorQ   go to state 135
+    @3       go to state 49
+    HelpOrQ  go to state 50
+
+
+state 72
+
+   51 ShowTypeVNS: T_TOPOLOGY .
+   52            | T_TOPOLOGY . TMIorQ
+
+    T_QUESTION  shift, and go to state 5
+    T_HELP      shift, and go to state 9
+
+    T_NEWLINE  reduce using rule 51 (ShowTypeVNS)
+    $default   reduce using rule 43 (@3)
+
+    TMIorQ   go to state 136
+    @3       go to state 49
+    HelpOrQ  go to state 50
+
+
+state 73
+
+   57 ShowTypeVNS: WrongOrQ .
+
+    $default  reduce using rule 57 (ShowTypeVNS)
+
+
+state 74
+
+   47 WrongOrQ: @4 . error
+
+    error  shift, and go to state 137
+
+
+state 75
+
+   15 ShowType: T_VNS ShowTypeVNS .
+
+    $default  reduce using rule 15 (ShowType)
+
+
+state 76
+
+   45 WrongOrQ: HelpOrQ .
+
+    $default  reduce using rule 45 (WrongOrQ)
+
+
+state 77
+
+   33 ShowTypeIP: T_ROUTE .
+   34           | T_ROUTE . TMIorQ
+
+    T_QUESTION  shift, and go to state 5
+    T_HELP      shift, and go to state 9
+
+    error     reduce using rule 43 (@3)
+    $default  reduce using rule 33 (ShowTypeIP)
+
+    TMIorQ   go to state 138
+    @3       go to state 49
+    HelpOrQ  go to state 50
+
+
+state 78
+
+   31 ShowTypeIP: T_INTF .
+   32           | T_INTF . TMIorQ
+
+    T_QUESTION  shift, and go to state 5
+    T_HELP      shift, and go to state 9
+
+    error     reduce using rule 43 (@3)
+    $default  reduce using rule 31 (ShowTypeIP)
+
+    TMIorQ   go to state 139
+    @3       go to state 49
+    HelpOrQ  go to state 50
+
+
+state 79
+
+   29 ShowTypeIP: T_ARP .
+   30           | T_ARP . TMIorQ
+
+    T_QUESTION  shift, and go to state 5
+    T_HELP      shift, and go to state 9
+
+    error     reduce using rule 43 (@3)
+    $default  reduce using rule 29 (ShowTypeIP)
+
+    TMIorQ   go to state 140
+    @3       go to state 49
+    HelpOrQ  go to state 50
+
+
+state 80
+
+   13 ShowType: T_IP ShowTypeIP .
+
+    $default  reduce using rule 13 (ShowType)
+
+
+state 81
+
+   35 ShowTypeIP: WrongOrQ .
+
+    $default  reduce using rule 35 (ShowTypeIP)
+
+
+state 82
+
+   39 ShowTypeOSPF: T_TOPOLOGY .
+   40             | T_TOPOLOGY . TMIorQ
+
+    T_QUESTION  shift, and go to state 5
+    T_HELP      shift, and go to state 9
+
+    error     reduce using rule 43 (@3)
+    $default  reduce using rule 39 (ShowTypeOSPF)
+
+    TMIorQ   go to state 141
+    @3       go to state 49
+    HelpOrQ  go to state 50
+
+
+state 83
+
+   37 ShowTypeOSPF: T_NEIGHBORS .
+   38             | T_NEIGHBORS . TMIorQ
+
+    T_QUESTION  shift, and go to state 5
+    T_HELP      shift, and go to state 9
+
+    error     reduce using rule 43 (@3)
+    $default  reduce using rule 37 (ShowTypeOSPF)
+
+    TMIorQ   go to state 142
+    @3       go to state 49
+    HelpOrQ  go to state 50
+
+
+state 84
+
+   14 ShowType: T_OSPF ShowTypeOSPF .
+
+    $default  reduce using rule 14 (ShowType)
+
+
+state 85
+
+   41 ShowTypeOSPF: WrongOrQ .
+
+    $default  reduce using rule 41 (ShowTypeOSPF)
+
+
+state 86
+
+   25 ShowTypeHW: T_ROUTE .
+   26           | T_ROUTE . TMIorQ
+
+    T_QUESTION  shift, and go to state 5
+    T_HELP      shift, and go to state 9
+
+    error     reduce using rule 43 (@3)
+    $default  reduce using rule 25 (ShowTypeHW)
+
+    TMIorQ   go to state 143
+    @3       go to state 49
+    HelpOrQ  go to state 50
+
+
+state 87
+
+   23 ShowTypeHW: T_INTF .
+   24           | T_INTF . TMIorQ
+
+    T_QUESTION  shift, and go to state 5
+    T_HELP      shift, and go to state 9
+
+    error     reduce using rule 43 (@3)
+    $default  reduce using rule 23 (ShowTypeHW)
+
+    TMIorQ   go to state 144
+    @3       go to state 49
+    HelpOrQ  go to state 50
+
+
+state 88
+
+   21 ShowTypeHW: T_ARP .
+   22           | T_ARP . TMIorQ
+
+    T_QUESTION  shift, and go to state 5
+    T_HELP      shift, and go to state 9
+
+    error     reduce using rule 43 (@3)
+    $default  reduce using rule 21 (ShowTypeHW)
+
+    TMIorQ   go to state 145
+    @3       go to state 49
+    HelpOrQ  go to state 50
+
+
+state 89
+
+   19 ShowTypeHW: T_ABOUT .
+   20           | T_ABOUT . TMIorQ
+
+    T_QUESTION  shift, and go to state 5
+    T_HELP      shift, and go to state 9
+
+    error     reduce using rule 43 (@3)
+    $default  reduce using rule 19 (ShowTypeHW)
+
+    TMIorQ   go to state 146
+    @3       go to state 49
+    HelpOrQ  go to state 50
+
+
+state 90
+
+   12 ShowType: T_HW ShowTypeHW .
+
+    $default  reduce using rule 12 (ShowType)
+
+
+state 91
+
+   27 ShowTypeHW: WrongOrQ .
+
+    $default  reduce using rule 27 (ShowTypeHW)
+
+
+state 92
+
+  212 ShowTypeOption: T_VERBOSE .
+  213               | T_VERBOSE . TMIorQ
+
+    T_QUESTION  shift, and go to state 5
+    T_HELP      shift, and go to state 9
+
+    T_NEWLINE  reduce using rule 212 (ShowTypeOption)
+    $default   reduce using rule 43 (@3)
+
+    TMIorQ   go to state 147
+    @3       go to state 49
+    HelpOrQ  go to state 50
+
+
+state 93
+
+  214 ShowTypeOption: WrongOrQ .
+
+    $default  reduce using rule 214 (ShowTypeOption)
+
+
+state 94
+
+   16 ShowType: T_OPTION ShowTypeOption .
+
+    $default  reduce using rule 16 (ShowType)
+
+
+state 95
+
+  102 ManipTypeIPRoute: T_ADD . RouteAddOrQ
+
+    T_QUESTION  shift, and go to state 5
+    T_HELP      shift, and go to state 9
+    TAV_IP      shift, and go to state 148
+
+    $default  reduce using rule 109 (@10)
+
+    RouteAddOrQ  go to state 149
+    @10          go to state 150
+    HelpOrQ      go to state 151
+
+
+state 96
+
+  103 ManipTypeIPRoute: T_DEL . RouteDelOrQ
+
+    T_QUESTION  shift, and go to state 5
+    T_HELP      shift, and go to state 9
+    TAV_IP      shift, and go to state 152
+
+    $default  reduce using rule 120 (@14)
+
+    RouteDelOrQ  go to state 153
+    @14          go to state 154
+    HelpOrQ      go to state 155
+
+
+state 97
+
+  104 ManipTypeIPRoute: T_PURGE .
+  105                 | T_PURGE . T_DYNAMIC
+  106                 | T_PURGE . T_STATIC
+  107                 | T_PURGE . TMIorQ
+
+    T_QUESTION  shift, and go to state 5
+    T_STATIC    shift, and go to state 156
+    T_DYNAMIC   shift, and go to state 157
+    T_HELP      shift, and go to state 9
+
+    T_NEWLINE  reduce using rule 104 (ManipTypeIPRoute)
+    $default   reduce using rule 43 (@3)
+
+    TMIorQ   go to state 158
+    @3       go to state 49
+    HelpOrQ  go to state 50
+
+
+state 98
+
+  101 ManipTypeIPRoute: WrongOrQ .
+
+    $default  reduce using rule 101 (ManipTypeIPRoute)
+
+
+state 99
+
+   62 ManipTypeIP: T_ROUTE ManipTypeIPRoute .
+
+    $default  reduce using rule 62 (ManipTypeIP)
+
+
+state 100
+
+   87 ManipTypeIPInterface: TAV_STR . WrongOrQ
+   89                     | TAV_STR . TAV_IP @9 error
+   90                     | TAV_STR . TAV_IP TAV_IP
+   91                     | TAV_STR . TAV_IP TAV_IP TMIorQ
+   92                     | TAV_STR . T_UP
+   93                     | TAV_STR . T_UP TMIorQ
+   94                     | TAV_STR . T_DOWN
+   95                     | TAV_STR . T_DOWN TMIorQ
+
+    T_QUESTION  shift, and go to state 5
+    T_UP        shift, and go to state 159
+    T_DOWN      shift, and go to state 160
+    T_HELP      shift, and go to state 9
+    TAV_IP      shift, and go to state 161
+
+    $default  reduce using rule 46 (@4)
+
+    WrongOrQ  go to state 162
+    @4        go to state 74
+    HelpOrQ   go to state 76
+
+
+state 101
+
+   60 ManipTypeIP: T_INTF ManipTypeIPInterface .
+
+    $default  reduce using rule 60 (ManipTypeIP)
+
+
+state 102
+
+   86 ManipTypeIPInterface: @8 . error
+
+    error  shift, and go to state 163
+
+
+state 103
+
+   84 ManipTypeIPInterface: HelpOrQ .
+
+    $default  reduce using rule 84 (ManipTypeIPInterface)
+
+
+state 104
+
+   64 ManipTypeIPARP: T_ADD . AddTransOrQ
+
+    T_QUESTION  shift, and go to state 5
+    T_HELP      shift, and go to state 9
+    TAV_IP      shift, and go to state 164
+
+    $default  reduce using rule 73 (@5)
+
+    AddTransOrQ  go to state 165
+    @5           go to state 166
+    HelpOrQ      go to state 167
+
+
+state 105
+
+   65 ManipTypeIPARP: T_DEL . DelTransOrQ
+
+    T_QUESTION  shift, and go to state 5
+    T_HELP      shift, and go to state 9
+    TAV_IP      shift, and go to state 168
+
+    $default  reduce using rule 80 (@7)
+
+    DelTransOrQ  go to state 169
+    @7           go to state 170
+    HelpOrQ      go to state 171
+
+
+state 106
+
+   66 ManipTypeIPARP: T_PURGE .
+   67               | T_PURGE . TMIorQ
+   68               | T_PURGE . T_DYNAMIC
+   69               | T_PURGE . T_DYNAMIC TMIorQ
+   70               | T_PURGE . T_STATIC
+   71               | T_PURGE . T_STATIC TMIorQ
+
+    T_QUESTION  shift, and go to state 5
+    T_STATIC    shift, and go to state 172
+    T_DYNAMIC   shift, and go to state 173
+    T_HELP      shift, and go to state 9
+
+    T_NEWLINE  reduce using rule 66 (ManipTypeIPARP)
+    $default   reduce using rule 43 (@3)
+
+    TMIorQ   go to state 174
+    @3       go to state 49
+    HelpOrQ  go to state 50
+
+
+state 107
+
+   63 ManipTypeIPARP: WrongOrQ .
+
+    $default  reduce using rule 63 (ManipTypeIPARP)
+
+
+state 108
+
+   59 ManipTypeIP: T_ARP ManipTypeIPARP .
+
+    $default  reduce using rule 59 (ManipTypeIP)
+
+
+state 109
+
+   97 ManipTypeIPOSPF: T_UP .
+   98                | T_UP . TMIorQ
+
+    T_QUESTION  shift, and go to state 5
+    T_HELP      shift, and go to state 9
+
+    T_NEWLINE  reduce using rule 97 (ManipTypeIPOSPF)
+    $default   reduce using rule 43 (@3)
+
+    TMIorQ   go to state 175
+    @3       go to state 49
+    HelpOrQ  go to state 50
+
+
+state 110
+
+   99 ManipTypeIPOSPF: T_DOWN .
+  100                | T_DOWN . TMIorQ
+
+    T_QUESTION  shift, and go to state 5
+    T_HELP      shift, and go to state 9
+
+    T_NEWLINE  reduce using rule 99 (ManipTypeIPOSPF)
+    $default   reduce using rule 43 (@3)
+
+    TMIorQ   go to state 176
+    @3       go to state 49
+    HelpOrQ  go to state 50
+
+
+state 111
+
+   96 ManipTypeIPOSPF: WrongOrQ .
+
+    $default  reduce using rule 96 (ManipTypeIPOSPF)
+
+
+state 112
+
+   61 ManipTypeIP: T_OSPF ManipTypeIPOSPF .
+
+    $default  reduce using rule 61 (ManipTypeIP)
+
+
+state 113
+
+  138 ActionPing: T_FLOOD TAV_INT . TAV_IP
+  139           | T_FLOOD TAV_INT . TAV_IP TMIorQ
+
+    TAV_IP  shift, and go to state 177
+
+
+state 114
+
+  136 ActionPing: T_FLOOD TAV_IP .
+  137           | T_FLOOD TAV_IP . TMIorQ
+
+    T_QUESTION  shift, and go to state 5
+    T_HELP      shift, and go to state 9
+
+    T_NEWLINE  reduce using rule 136 (ActionPing)
+    $default   reduce using rule 43 (@3)
+
+    TMIorQ   go to state 178
+    @3       go to state 49
+    HelpOrQ  go to state 50
+
+
+state 115
+
+  140 ActionPing: TAV_IP TMIorQ .
+
+    $default  reduce using rule 140 (ActionPing)
+
+
+state 116
+
+  134 ActionPing: @16 error .
+
+    $default  reduce using rule 134 (ActionPing)
+
+
+state 117
+
+  145 ActionTrace: TAV_IP TMIorQ .
+
+    $default  reduce using rule 145 (ActionTrace)
+
+
+state 118
+
+  143 ActionTrace: @17 error .
+
+    $default  reduce using rule 143 (ActionTrace)
+
+
+state 119
+
+   44 TMIorQ: @3 error .
+
+    $default  reduce using rule 44 (TMIorQ)
+
+
+state 120
+
+  171 ActionHelp: HelpOrQ T_SHOW T_VNS .
+  172           | HelpOrQ T_SHOW T_VNS . T_LHOST
+  173           | HelpOrQ T_SHOW T_VNS . T_TOPOLOGY
+  174           | HelpOrQ T_SHOW T_VNS . T_USER
+  175           | HelpOrQ T_SHOW T_VNS . T_VHOST
+
+    T_USER      shift, and go to state 179
+    T_VHOST     shift, and go to state 180
+    T_LHOST     shift, and go to state 181
+    T_TOPOLOGY  shift, and go to state 182
+
+    $default  reduce using rule 171 (ActionHelp)
+
+
+state 121
+
+  162 ActionHelp: HelpOrQ T_SHOW T_IP .
+  163           | HelpOrQ T_SHOW T_IP . T_ARP
+  164           | HelpOrQ T_SHOW T_IP . T_INTF
+  165           | HelpOrQ T_SHOW T_IP . T_ROUTE
+
+    T_ROUTE  shift, and go to state 183
+    T_INTF   shift, and go to state 184
+    T_ARP    shift, and go to state 185
+
+    $default  reduce using rule 162 (ActionHelp)
+
+
+state 122
+
+  168 ActionHelp: HelpOrQ T_SHOW T_OSPF .
+  169           | HelpOrQ T_SHOW T_OSPF . T_NEIGHBORS
+  170           | HelpOrQ T_SHOW T_OSPF . T_TOPOLOGY
+
+    T_TOPOLOGY   shift, and go to state 186
+    T_NEIGHBORS  shift, and go to state 187
+
+    $default  reduce using rule 168 (ActionHelp)
+
+
+state 123
+
+  157 ActionHelp: HelpOrQ T_SHOW T_HW .
+  158           | HelpOrQ T_SHOW T_HW . T_ABOUT
+  159           | HelpOrQ T_SHOW T_HW . T_ARP
+  160           | HelpOrQ T_SHOW T_HW . T_INTF
+  161           | HelpOrQ T_SHOW T_HW . T_ROUTE
+
+    T_ROUTE  shift, and go to state 188
+    T_INTF   shift, and go to state 189
+    T_ARP    shift, and go to state 190
+    T_ABOUT  shift, and go to state 191
+
+    $default  reduce using rule 157 (ActionHelp)
+
+
+state 124
+
+  166 ActionHelp: HelpOrQ T_SHOW T_OPTION .
+  167           | HelpOrQ T_SHOW T_OPTION . T_VERBOSE
+
+    T_VERBOSE  shift, and go to state 192
+
+    $default  reduce using rule 166 (ActionHelp)
+
+
+state 125
+
+  155 ActionHelp: HelpOrQ T_ALL @18 . error
+
+    error  shift, and go to state 193
+
+
+state 126
+
+  186 ActionHelp: HelpOrQ T_IP T_ROUTE .
+  187           | HelpOrQ T_IP T_ROUTE . T_ADD
+  188           | HelpOrQ T_IP T_ROUTE . T_DEL
+  189           | HelpOrQ T_IP T_ROUTE . T_PURGE
+  190           | HelpOrQ T_IP T_ROUTE . T_DYNAMIC
+  191           | HelpOrQ T_IP T_ROUTE . T_STATIC
+
+    T_ADD      shift, and go to state 194
+    T_DEL      shift, and go to state 195
+    T_PURGE    shift, and go to state 196
+    T_STATIC   shift, and go to state 197
+    T_DYNAMIC  shift, and go to state 198
+
+    $default  reduce using rule 186 (ActionHelp)
+
+
+state 127
+
+  183 ActionHelp: HelpOrQ T_IP T_INTF .
+  184           | HelpOrQ T_IP T_INTF . T_DOWN
+  185           | HelpOrQ T_IP T_INTF . T_UP
+
+    T_UP    shift, and go to state 199
+    T_DOWN  shift, and go to state 200
+
+    $default  reduce using rule 183 (ActionHelp)
+
+
+state 128
+
+  177 ActionHelp: HelpOrQ T_IP T_ARP .
+  178           | HelpOrQ T_IP T_ARP . T_ADD
+  179           | HelpOrQ T_IP T_ARP . T_DEL
+  180           | HelpOrQ T_IP T_ARP . T_PURGE
+  181           | HelpOrQ T_IP T_ARP . T_PURGE T_DYNAMIC
+  182           | HelpOrQ T_IP T_ARP . T_PURGE T_STATIC
+
+    T_ADD    shift, and go to state 201
+    T_DEL    shift, and go to state 202
+    T_PURGE  shift, and go to state 203
+
+    $default  reduce using rule 177 (ActionHelp)
+
+
+state 129
+
+  198 ActionHelp: HelpOrQ T_SET T_VERBOSE .
+
+    $default  reduce using rule 198 (ActionHelp)
+
+
+state 130
+
+  200 ActionHelp: HelpOrQ T_UNSET T_VERBOSE .
+
+    $default  reduce using rule 200 (ActionHelp)
+
+
+state 131
+
+  202 ActionHelp: HelpOrQ @19 error .
+
+    $default  reduce using rule 202 (ActionHelp)
+
+
+state 132
+
+  210 Option: T_VERBOSE TMIorQ .
+
+    $default  reduce using rule 210 (Option)
+
+
+state 133
+
+   54 ShowTypeVNS: T_USER TMIorQ .
+
+    $default  reduce using rule 54 (ShowTypeVNS)
+
+
+state 134
+
+   56 ShowTypeVNS: T_VHOST TMIorQ .
+
+    $default  reduce using rule 56 (ShowTypeVNS)
+
+
+state 135
+
+   50 ShowTypeVNS: T_LHOST TMIorQ .
+
+    $default  reduce using rule 50 (ShowTypeVNS)
+
+
+state 136
+
+   52 ShowTypeVNS: T_TOPOLOGY TMIorQ .
+
+    $default  reduce using rule 52 (ShowTypeVNS)
+
+
+state 137
+
+   47 WrongOrQ: @4 error .
+
+    $default  reduce using rule 47 (WrongOrQ)
+
+
+state 138
+
+   34 ShowTypeIP: T_ROUTE TMIorQ .
+
+    $default  reduce using rule 34 (ShowTypeIP)
+
+
+state 139
+
+   32 ShowTypeIP: T_INTF TMIorQ .
+
+    $default  reduce using rule 32 (ShowTypeIP)
+
+
+state 140
+
+   30 ShowTypeIP: T_ARP TMIorQ .
+
+    $default  reduce using rule 30 (ShowTypeIP)
+
+
+state 141
+
+   40 ShowTypeOSPF: T_TOPOLOGY TMIorQ .
+
+    $default  reduce using rule 40 (ShowTypeOSPF)
+
+
+state 142
+
+   38 ShowTypeOSPF: T_NEIGHBORS TMIorQ .
+
+    $default  reduce using rule 38 (ShowTypeOSPF)
+
+
+state 143
+
+   26 ShowTypeHW: T_ROUTE TMIorQ .
+
+    $default  reduce using rule 26 (ShowTypeHW)
+
+
+state 144
+
+   24 ShowTypeHW: T_INTF TMIorQ .
+
+    $default  reduce using rule 24 (ShowTypeHW)
+
+
+state 145
+
+   22 ShowTypeHW: T_ARP TMIorQ .
+
+    $default  reduce using rule 22 (ShowTypeHW)
+
+
+state 146
+
+   20 ShowTypeHW: T_ABOUT TMIorQ .
+
+    $default  reduce using rule 20 (ShowTypeHW)
+
+
+state 147
+
+  213 ShowTypeOption: T_VERBOSE TMIorQ .
+
+    $default  reduce using rule 213 (ShowTypeOption)
+
+
+state 148
+
+  112 RouteAddOrQ: TAV_IP . @11 error
+  114            | TAV_IP . TAV_IP @12 error
+  116            | TAV_IP . TAV_IP TAV_IP @13 error
+  117            | TAV_IP . TAV_IP TAV_IP TAV_STR
+  118            | TAV_IP . TAV_IP TAV_IP TAV_STR TMIorQ
+
+    TAV_IP  shift, and go to state 204
+
+    $default  reduce using rule 111 (@11)
+
+    @11  go to state 205
+
+
+state 149
+
+  102 ManipTypeIPRoute: T_ADD RouteAddOrQ .
+
+    $default  reduce using rule 102 (ManipTypeIPRoute)
+
+
+state 150
+
+  110 RouteAddOrQ: @10 . error
+
+    error  shift, and go to state 206
+
+
+state 151
+
+  108 RouteAddOrQ: HelpOrQ .
+
+    $default  reduce using rule 108 (RouteAddOrQ)
+
+
+state 152
+
+  123 RouteDelOrQ: TAV_IP . @15 error
+  124            | TAV_IP . TAV_IP
+  125            | TAV_IP . TAV_IP TMIorQ
+
+    TAV_IP  shift, and go to state 207
+
+    $default  reduce using rule 122 (@15)
+
+    @15  go to state 208
+
+
+state 153
+
+  103 ManipTypeIPRoute: T_DEL RouteDelOrQ .
+
+    $default  reduce using rule 103 (ManipTypeIPRoute)
+
+
+state 154
+
+  121 RouteDelOrQ: @14 . error
+
+    error  shift, and go to state 209
+
+
+state 155
+
+  119 RouteDelOrQ: HelpOrQ .
+
+    $default  reduce using rule 119 (RouteDelOrQ)
+
+
+state 156
+
+  106 ManipTypeIPRoute: T_PURGE T_STATIC .
+
+    $default  reduce using rule 106 (ManipTypeIPRoute)
+
+
+state 157
+
+  105 ManipTypeIPRoute: T_PURGE T_DYNAMIC .
+
+    $default  reduce using rule 105 (ManipTypeIPRoute)
+
+
+state 158
+
+  107 ManipTypeIPRoute: T_PURGE TMIorQ .
+
+    $default  reduce using rule 107 (ManipTypeIPRoute)
+
+
+state 159
+
+   92 ManipTypeIPInterface: TAV_STR T_UP .
+   93                     | TAV_STR T_UP . TMIorQ
+
+    T_QUESTION  shift, and go to state 5
+    T_HELP      shift, and go to state 9
+
+    T_NEWLINE  reduce using rule 92 (ManipTypeIPInterface)
+    $default   reduce using rule 43 (@3)
+
+    TMIorQ   go to state 210
+    @3       go to state 49
+    HelpOrQ  go to state 50
+
+
+state 160
+
+   94 ManipTypeIPInterface: TAV_STR T_DOWN .
+   95                     | TAV_STR T_DOWN . TMIorQ
+
+    T_QUESTION  shift, and go to state 5
+    T_HELP      shift, and go to state 9
+
+    T_NEWLINE  reduce using rule 94 (ManipTypeIPInterface)
+    $default   reduce using rule 43 (@3)
+
+    TMIorQ   go to state 211
+    @3       go to state 49
+    HelpOrQ  go to state 50
+
+
+state 161
+
+   89 ManipTypeIPInterface: TAV_STR TAV_IP . @9 error
+   90                     | TAV_STR TAV_IP . TAV_IP
+   91                     | TAV_STR TAV_IP . TAV_IP TMIorQ
+
+    TAV_IP  shift, and go to state 212
+
+    $default  reduce using rule 88 (@9)
+
+    @9  go to state 213
+
+
+state 162
+
+   87 ManipTypeIPInterface: TAV_STR WrongOrQ .
+
+    $default  reduce using rule 87 (ManipTypeIPInterface)
+
+
+state 163
+
+   86 ManipTypeIPInterface: @8 error .
+
+    $default  reduce using rule 86 (ManipTypeIPInterface)
+
+
+state 164
+
+   76 AddTransOrQ: TAV_IP . @6 error
+   77            | TAV_IP . TAV_MAC
+   78            | TAV_IP . TAV_MAC TMIorQ
+
+    TAV_MAC  shift, and go to state 214
+
+    $default  reduce using rule 75 (@6)
+
+    @6  go to state 215
+
+
+state 165
+
+   64 ManipTypeIPARP: T_ADD AddTransOrQ .
+
+    $default  reduce using rule 64 (ManipTypeIPARP)
+
+
+state 166
+
+   74 AddTransOrQ: @5 . error
+
+    error  shift, and go to state 216
+
+
+state 167
+
+   72 AddTransOrQ: HelpOrQ .
+
+    $default  reduce using rule 72 (AddTransOrQ)
+
+
+state 168
+
+   82 DelTransOrQ: TAV_IP .
+   83            | TAV_IP . TMIorQ
+
+    T_QUESTION  shift, and go to state 5
+    T_HELP      shift, and go to state 9
+
+    T_NEWLINE  reduce using rule 82 (DelTransOrQ)
+    $default   reduce using rule 43 (@3)
+
+    TMIorQ   go to state 217
+    @3       go to state 49
+    HelpOrQ  go to state 50
+
+
+state 169
+
+   65 ManipTypeIPARP: T_DEL DelTransOrQ .
+
+    $default  reduce using rule 65 (ManipTypeIPARP)
+
+
+state 170
+
+   81 DelTransOrQ: @7 . error
+
+    error  shift, and go to state 218
+
+
+state 171
+
+   79 DelTransOrQ: HelpOrQ .
+
+    $default  reduce using rule 79 (DelTransOrQ)
+
+
+state 172
+
+   70 ManipTypeIPARP: T_PURGE T_STATIC .
+   71               | T_PURGE T_STATIC . TMIorQ
+
+    T_QUESTION  shift, and go to state 5
+    T_HELP      shift, and go to state 9
+
+    T_NEWLINE  reduce using rule 70 (ManipTypeIPARP)
+    $default   reduce using rule 43 (@3)
+
+    TMIorQ   go to state 219
+    @3       go to state 49
+    HelpOrQ  go to state 50
+
+
+state 173
+
+   68 ManipTypeIPARP: T_PURGE T_DYNAMIC .
+   69               | T_PURGE T_DYNAMIC . TMIorQ
+
+    T_QUESTION  shift, and go to state 5
+    T_HELP      shift, and go to state 9
+
+    T_NEWLINE  reduce using rule 68 (ManipTypeIPARP)
+    $default   reduce using rule 43 (@3)
+
+    TMIorQ   go to state 220
+    @3       go to state 49
+    HelpOrQ  go to state 50
+
+
+state 174
+
+   67 ManipTypeIPARP: T_PURGE TMIorQ .
+
+    $default  reduce using rule 67 (ManipTypeIPARP)
+
+
+state 175
+
+   98 ManipTypeIPOSPF: T_UP TMIorQ .
+
+    $default  reduce using rule 98 (ManipTypeIPOSPF)
+
+
+state 176
+
+  100 ManipTypeIPOSPF: T_DOWN TMIorQ .
+
+    $default  reduce using rule 100 (ManipTypeIPOSPF)
+
+
+state 177
+
+  138 ActionPing: T_FLOOD TAV_INT TAV_IP .
+  139           | T_FLOOD TAV_INT TAV_IP . TMIorQ
+
+    T_QUESTION  shift, and go to state 5
+    T_HELP      shift, and go to state 9
+
+    T_NEWLINE  reduce using rule 138 (ActionPing)
+    $default   reduce using rule 43 (@3)
+
+    TMIorQ   go to state 221
+    @3       go to state 49
+    HelpOrQ  go to state 50
+
+
+state 178
+
+  137 ActionPing: T_FLOOD TAV_IP TMIorQ .
+
+    $default  reduce using rule 137 (ActionPing)
+
+
+state 179
+
+  174 ActionHelp: HelpOrQ T_SHOW T_VNS T_USER .
+
+    $default  reduce using rule 174 (ActionHelp)
+
+
+state 180
+
+  175 ActionHelp: HelpOrQ T_SHOW T_VNS T_VHOST .
+
+    $default  reduce using rule 175 (ActionHelp)
+
+
+state 181
+
+  172 ActionHelp: HelpOrQ T_SHOW T_VNS T_LHOST .
+
+    $default  reduce using rule 172 (ActionHelp)
+
+
+state 182
+
+  173 ActionHelp: HelpOrQ T_SHOW T_VNS T_TOPOLOGY .
+
+    $default  reduce using rule 173 (ActionHelp)
+
+
+state 183
+
+  165 ActionHelp: HelpOrQ T_SHOW T_IP T_ROUTE .
+
+    $default  reduce using rule 165 (ActionHelp)
+
+
+state 184
+
+  164 ActionHelp: HelpOrQ T_SHOW T_IP T_INTF .
+
+    $default  reduce using rule 164 (ActionHelp)
+
+
+state 185
+
+  163 ActionHelp: HelpOrQ T_SHOW T_IP T_ARP .
+
+    $default  reduce using rule 163 (ActionHelp)
+
+
+state 186
+
+  170 ActionHelp: HelpOrQ T_SHOW T_OSPF T_TOPOLOGY .
+
+    $default  reduce using rule 170 (ActionHelp)
+
+
+state 187
+
+  169 ActionHelp: HelpOrQ T_SHOW T_OSPF T_NEIGHBORS .
+
+    $default  reduce using rule 169 (ActionHelp)
+
+
+state 188
+
+  161 ActionHelp: HelpOrQ T_SHOW T_HW T_ROUTE .
+
+    $default  reduce using rule 161 (ActionHelp)
+
+
+state 189
+
+  160 ActionHelp: HelpOrQ T_SHOW T_HW T_INTF .
+
+    $default  reduce using rule 160 (ActionHelp)
+
+
+state 190
+
+  159 ActionHelp: HelpOrQ T_SHOW T_HW T_ARP .
+
+    $default  reduce using rule 159 (ActionHelp)
+
+
+state 191
+
+  158 ActionHelp: HelpOrQ T_SHOW T_HW T_ABOUT .
+
+    $default  reduce using rule 158 (ActionHelp)
+
+
+state 192
+
+  167 ActionHelp: HelpOrQ T_SHOW T_OPTION T_VERBOSE .
+
+    $default  reduce using rule 167 (ActionHelp)
+
+
+state 193
+
+  155 ActionHelp: HelpOrQ T_ALL @18 error .
+
+    $default  reduce using rule 155 (ActionHelp)
+
+
+state 194
+
+  187 ActionHelp: HelpOrQ T_IP T_ROUTE T_ADD .
+
+    $default  reduce using rule 187 (ActionHelp)
+
+
+state 195
+
+  188 ActionHelp: HelpOrQ T_IP T_ROUTE T_DEL .
+
+    $default  reduce using rule 188 (ActionHelp)
+
+
+state 196
+
+  189 ActionHelp: HelpOrQ T_IP T_ROUTE T_PURGE .
+
+    $default  reduce using rule 189 (ActionHelp)
+
+
+state 197
+
+  191 ActionHelp: HelpOrQ T_IP T_ROUTE T_STATIC .
+
+    $default  reduce using rule 191 (ActionHelp)
+
+
+state 198
+
+  190 ActionHelp: HelpOrQ T_IP T_ROUTE T_DYNAMIC .
+
+    $default  reduce using rule 190 (ActionHelp)
+
+
+state 199
+
+  185 ActionHelp: HelpOrQ T_IP T_INTF T_UP .
+
+    $default  reduce using rule 185 (ActionHelp)
+
+
+state 200
+
+  184 ActionHelp: HelpOrQ T_IP T_INTF T_DOWN .
+
+    $default  reduce using rule 184 (ActionHelp)
+
+
+state 201
+
+  178 ActionHelp: HelpOrQ T_IP T_ARP T_ADD .
+
+    $default  reduce using rule 178 (ActionHelp)
+
+
+state 202
+
+  179 ActionHelp: HelpOrQ T_IP T_ARP T_DEL .
+
+    $default  reduce using rule 179 (ActionHelp)
+
+
+state 203
+
+  180 ActionHelp: HelpOrQ T_IP T_ARP T_PURGE .
+  181           | HelpOrQ T_IP T_ARP T_PURGE . T_DYNAMIC
+  182           | HelpOrQ T_IP T_ARP T_PURGE . T_STATIC
+
+    T_STATIC   shift, and go to state 222
+    T_DYNAMIC  shift, and go to state 223
+
+    $default  reduce using rule 180 (ActionHelp)
+
+
+state 204
+
+  114 RouteAddOrQ: TAV_IP TAV_IP . @12 error
+  116            | TAV_IP TAV_IP . TAV_IP @13 error
+  117            | TAV_IP TAV_IP . TAV_IP TAV_STR
+  118            | TAV_IP TAV_IP . TAV_IP TAV_STR TMIorQ
+
+    TAV_IP  shift, and go to state 224
+
+    $default  reduce using rule 113 (@12)
+
+    @12  go to state 225
+
+
+state 205
+
+  112 RouteAddOrQ: TAV_IP @11 . error
+
+    error  shift, and go to state 226
+
+
+state 206
+
+  110 RouteAddOrQ: @10 error .
+
+    $default  reduce using rule 110 (RouteAddOrQ)
+
+
+state 207
+
+  124 RouteDelOrQ: TAV_IP TAV_IP .
+  125            | TAV_IP TAV_IP . TMIorQ
+
+    T_QUESTION  shift, and go to state 5
+    T_HELP      shift, and go to state 9
+
+    T_NEWLINE  reduce using rule 124 (RouteDelOrQ)
+    $default   reduce using rule 43 (@3)
+
+    TMIorQ   go to state 227
+    @3       go to state 49
+    HelpOrQ  go to state 50
+
+
+state 208
+
+  123 RouteDelOrQ: TAV_IP @15 . error
+
+    error  shift, and go to state 228
+
+
+state 209
+
+  121 RouteDelOrQ: @14 error .
+
+    $default  reduce using rule 121 (RouteDelOrQ)
+
+
+state 210
+
+   93 ManipTypeIPInterface: TAV_STR T_UP TMIorQ .
+
+    $default  reduce using rule 93 (ManipTypeIPInterface)
+
+
+state 211
+
+   95 ManipTypeIPInterface: TAV_STR T_DOWN TMIorQ .
+
+    $default  reduce using rule 95 (ManipTypeIPInterface)
+
+
+state 212
+
+   90 ManipTypeIPInterface: TAV_STR TAV_IP TAV_IP .
+   91                     | TAV_STR TAV_IP TAV_IP . TMIorQ
+
+    T_QUESTION  shift, and go to state 5
+    T_HELP      shift, and go to state 9
+
+    T_NEWLINE  reduce using rule 90 (ManipTypeIPInterface)
+    $default   reduce using rule 43 (@3)
+
+    TMIorQ   go to state 229
+    @3       go to state 49
+    HelpOrQ  go to state 50
+
+
+state 213
+
+   89 ManipTypeIPInterface: TAV_STR TAV_IP @9 . error
+
+    error  shift, and go to state 230
+
+
+state 214
+
+   77 AddTransOrQ: TAV_IP TAV_MAC .
+   78            | TAV_IP TAV_MAC . TMIorQ
+
+    T_QUESTION  shift, and go to state 5
+    T_HELP      shift, and go to state 9
+
+    T_NEWLINE  reduce using rule 77 (AddTransOrQ)
+    $default   reduce using rule 43 (@3)
+
+    TMIorQ   go to state 231
+    @3       go to state 49
+    HelpOrQ  go to state 50
+
+
+state 215
+
+   76 AddTransOrQ: TAV_IP @6 . error
+
+    error  shift, and go to state 232
+
+
+state 216
+
+   74 AddTransOrQ: @5 error .
+
+    $default  reduce using rule 74 (AddTransOrQ)
+
+
+state 217
+
+   83 DelTransOrQ: TAV_IP TMIorQ .
+
+    $default  reduce using rule 83 (DelTransOrQ)
+
+
+state 218
+
+   81 DelTransOrQ: @7 error .
+
+    $default  reduce using rule 81 (DelTransOrQ)
+
+
+state 219
+
+   71 ManipTypeIPARP: T_PURGE T_STATIC TMIorQ .
+
+    $default  reduce using rule 71 (ManipTypeIPARP)
+
+
+state 220
+
+   69 ManipTypeIPARP: T_PURGE T_DYNAMIC TMIorQ .
+
+    $default  reduce using rule 69 (ManipTypeIPARP)
+
+
+state 221
+
+  139 ActionPing: T_FLOOD TAV_INT TAV_IP TMIorQ .
+
+    $default  reduce using rule 139 (ActionPing)
+
+
+state 222
+
+  182 ActionHelp: HelpOrQ T_IP T_ARP T_PURGE T_STATIC .
+
+    $default  reduce using rule 182 (ActionHelp)
+
+
+state 223
+
+  181 ActionHelp: HelpOrQ T_IP T_ARP T_PURGE T_DYNAMIC .
+
+    $default  reduce using rule 181 (ActionHelp)
+
+
+state 224
+
+  116 RouteAddOrQ: TAV_IP TAV_IP TAV_IP . @13 error
+  117            | TAV_IP TAV_IP TAV_IP . TAV_STR
+  118            | TAV_IP TAV_IP TAV_IP . TAV_STR TMIorQ
+
+    TAV_STR  shift, and go to state 233
+
+    $default  reduce using rule 115 (@13)
+
+    @13  go to state 234
+
+
+state 225
+
+  114 RouteAddOrQ: TAV_IP TAV_IP @12 . error
+
+    error  shift, and go to state 235
+
+
+state 226
+
+  112 RouteAddOrQ: TAV_IP @11 error .
+
+    $default  reduce using rule 112 (RouteAddOrQ)
+
+
+state 227
+
+  125 RouteDelOrQ: TAV_IP TAV_IP TMIorQ .
+
+    $default  reduce using rule 125 (RouteDelOrQ)
+
+
+state 228
+
+  123 RouteDelOrQ: TAV_IP @15 error .
+
+    $default  reduce using rule 123 (RouteDelOrQ)
+
+
+state 229
+
+   91 ManipTypeIPInterface: TAV_STR TAV_IP TAV_IP TMIorQ .
+
+    $default  reduce using rule 91 (ManipTypeIPInterface)
+
+
+state 230
+
+   89 ManipTypeIPInterface: TAV_STR TAV_IP @9 error .
+
+    $default  reduce using rule 89 (ManipTypeIPInterface)
+
+
+state 231
+
+   78 AddTransOrQ: TAV_IP TAV_MAC TMIorQ .
+
+    $default  reduce using rule 78 (AddTransOrQ)
+
+
+state 232
+
+   76 AddTransOrQ: TAV_IP @6 error .
+
+    $default  reduce using rule 76 (AddTransOrQ)
+
+
+state 233
+
+  117 RouteAddOrQ: TAV_IP TAV_IP TAV_IP TAV_STR .
+  118            | TAV_IP TAV_IP TAV_IP TAV_STR . TMIorQ
+
+    T_QUESTION  shift, and go to state 5
+    T_HELP      shift, and go to state 9
+
+    T_NEWLINE  reduce using rule 117 (RouteAddOrQ)
+    $default   reduce using rule 43 (@3)
+
+    TMIorQ   go to state 236
+    @3       go to state 49
+    HelpOrQ  go to state 50
+
+
+state 234
+
+  116 RouteAddOrQ: TAV_IP TAV_IP TAV_IP @13 . error
+
+    error  shift, and go to state 237
+
+
+state 235
+
+  114 RouteAddOrQ: TAV_IP TAV_IP @12 error .
+
+    $default  reduce using rule 114 (RouteAddOrQ)
+
+
+state 236
+
+  118 RouteAddOrQ: TAV_IP TAV_IP TAV_IP TAV_STR TMIorQ .
+
+    $default  reduce using rule 118 (RouteAddOrQ)
+
+
+state 237
+
+  116 RouteAddOrQ: TAV_IP TAV_IP TAV_IP @13 error .
+
+    $default  reduce using rule 116 (RouteAddOrQ)
