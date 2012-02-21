@@ -30,13 +30,16 @@ struct send_list
 struct sr_eth_pkt* read_ethernet_frame( uint8_t*, unsigned int);
 struct sr_arphdr* extract_arp_header(uint8_t*);
 struct sr_ip_pkt* read_ip_pkt(uint8_t*, unsigned int );
-int handle_ip_pkt(struct sr_instance* , struct sr_ip_pkt* , char* , unsigned int );
+int handle_ip_pkt(struct sr_instance* , struct sr_ip_pkt* , char* , unsigned int, uint8_t MAC[] );
 
 int make_and_send(struct sr_instance*, char*, uint32_t, uint8_t*, unsigned int, uint8_t);
 int create_ICMP_pkt(struct sr_instance*, char*, uint32_t, uint8_t, uint8_t, uint8_t*);
 
 struct send_list* send_list_new();
-int send_list_send(struct sr_instance*, char*, uint32_t*, uint8_t*);
+
+int send_list_send(struct send_list*, struct sr_instance*, uint32_t*, uint8_t*);
+
+
 void send_list_add(struct send_list**, uint32_t, uint8_t*, unsigned int, char*, uint16_t, time_t);
 
 int send_packet(struct sr_instance*, char*, uint8_t*, uint8_t*, unsigned int, uint16_t);

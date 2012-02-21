@@ -26,9 +26,9 @@ struct arp_cache_list{
 };
 
 struct arp_cache_list* create_cache_new();
-void add_cache_entry(struct arp_cache_list**, uint32_t, uint8_t MAC[6], time_t);
-uint8_t* find_mac_in_cache(struct arp_cache_list*, uint32_t);
-int find_and_update(struct arp_cache_list*, uint32_t, uint8_t MAC[6], time_t);
+void add_cache_entry(struct sr_instance*, uint32_t, uint8_t MAC[6], time_t);
+uint8_t* find_mac_in_cache(struct sr_instance*, uint32_t);
+int find_and_update(struct sr_instance*, uint32_t, uint8_t MAC[6], time_t);
 
 int get_cache_length(struct arp_cache_list*);
 int remove_cache_entry(struct arp_cache_list*, uint32_t);

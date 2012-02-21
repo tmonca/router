@@ -58,8 +58,8 @@ void sr_integ_init(struct sr_instance* sr)
     //now create the piecces
     
     subsystem->routing_table = (struct sr_rt*)malloc_or_die(sizeof(struct sr_rt));
-    subsystem->arp_cache = (struct arp_cache_list*)malloc_or_die(sizeof(struct arp_cache_list));
-    subsystem->waitSend = NULL;
+    //subsystem->arp_cache = (struct arp_cache_list*)malloc_or_die(sizeof(struct arp_cache_list));
+    subsystem->waitSend = (struct send_list*)malloc_or_die(sizeof(struct send_list));
     
 } /* -- sr_integ_init -- */
 
@@ -111,7 +111,7 @@ void sr_integ_input(struct sr_instance* sr,
    struct sr_router* subsystem = (struct sr_router*)sr_get_subsystem(sr);
    
    printf("*** -> Received packet of length %d \n",len);
-   int check;
+   int check, tmp;
    struct sr_eth_pkt* Frame;
    Frame = (struct sr_eth_pkt*) malloc_or_die(len);    
    Frame = read_ethernet_frame(packet, len);
@@ -120,6 +120,12 @@ void sr_integ_input(struct sr_instance* sr,
    
    uint16_t tmpType;
    tmpType = ntohs(Frame->header->ether_type);
+   
+   //1 Use Ethernet header to update ARP regardless of pkt type
+   
+   uint8_t* srcMAC = (uint8_t*)malloc_or_die(6);
+   srcMAC = Frame->header->ether_shost;
+   
    
    /* Now we have to check the type and handle accordingly */
    if(tmpType == ETHERTYPE_ARP){
@@ -134,11 +140,14 @@ void sr_integ_input(struct sr_instance* sr,
       struct sr_ip_pkt* Pkt = read_ip_pkt(Frame->payload, (len-14));
       
       printf("***@***@***@***@***     IP PACKET    @***@***@***@***\n");
-      check = handle_ip_pkt(sr, Pkt, interface, (len-14));
+      check = handle_ip_pkt(sr, Pkt, interface, (len-14), srcMAC);
       
       switch (check) {
-         case 2:
+         case 3: 
             printf("******************   This isn't my packet so I will now call forwarding code\n");
+            break;
+         case 2:
+            printf("******************   ICMP packet processed\n");
             break;
          case 1:
             printf("******************   This packet belongs to me so I will now process it\n");
@@ -158,6 +167,8 @@ void sr_integ_input(struct sr_instance* sr,
    else{
       printf("\n@@@@@@@@@@@@@@@@@@@@@@@  UNRECOGNISED PACKET TYPE %hu\n", tmpType);
    }
+   printf("@******@*******   %s   leaving this function\n", __func__);
+   
    return;
    
 

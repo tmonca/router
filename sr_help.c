@@ -1,6 +1,6 @@
 
 #include "sr_help.h"
-
+#include "cli/helper.h"
 
 
 void mac_copy(uint8_t in[], uint8_t out[]){

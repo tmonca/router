@@ -60,7 +60,7 @@ struct sr_ip_pkt* read_ip_pkt(uint8_t* raw, unsigned int len){
  * A method for dealing with IP packets and assigning to correct place
  *---------------------------------------------------------------------*/
 
-int handle_ip_pkt(struct sr_instance* sr, struct sr_ip_pkt* Pkt, char* interface, unsigned int len){
+int handle_ip_pkt(struct sr_instance* sr, struct sr_ip_pkt* Pkt, char* interface, unsigned int len, uint8_t srcMAC[]){
    /*
     Extract the IP header
     Header actions:
@@ -91,11 +91,15 @@ int handle_ip_pkt(struct sr_instance* sr, struct sr_ip_pkt* Pkt, char* interface
     */
     
    struct sr_router* subsystem = (struct sr_router*)sr_get_subsystem(sr);
-
-    
+   
    struct sr_vns_if* myIntf = sr_get_interface(sr, interface); 
    uint32_t myIP = myIntf->ip;
    uint32_t originIP = Pkt->header->ip_src.s_addr;
+   
+   //first thing is to update ARP - no point wasiting useful information is there!
+   time_t now = time(NULL);
+   int checkArp; 
+   checkArp = find_and_update(sr, originIP, srcMAC, now);
    
    if(cksum((uint8_t*)Pkt->header, 20)){
       printf("@@@@@@@@@@@@@@@@@@@@@@    CHECKSUM WAS INVALID SO WE WILL DROP THE PACKET\n");
@@ -119,6 +123,7 @@ int handle_ip_pkt(struct sr_instance* sr, struct sr_ip_pkt* Pkt, char* interface
          ICMP = array_cpy(offset, 64);
          int tmp;
          tmp = create_ICMP_pkt(sr, interface, originIP, 8, 0, ICMP);
+         return tmp;
       }
       
       return 1;
@@ -189,7 +194,18 @@ int create_ICMP_pkt(struct sr_instance* sr, char* interface, uint32_t dstIP, uin
                              //now we send the packet
    rtn = make_and_send(sr, interface, dstIP, (uint8_t*)packet, len, IPPROTO_ICMP);
    
-   return rtn;
+   if(rtn == 2){
+         printf("*************    ICMP pkt, ARP request sent\n");
+         return 2;
+   }
+   else if (rtn == 1){
+      printf("**************    ICMP packet, we had an ARP entry\n");
+      return 2;
+   }
+   else{
+      return 0;
+   }
+   return 0;
 }
 
 /*--------------------------------------------------------------------- 
@@ -235,6 +251,7 @@ int make_and_send(struct sr_instance* sr, char * interface, uint32_t dstIP, uint
    payload = array_cpy(ipHdr, 20);
    payload = payload + 20;
    payload = array_cpy(payld, len);
+   printf("*************      %s     ******************\n", __func__);
    rtn = arp_lookup(sr, interface, payload, dstIP, (len + 20));
       
    return rtn;
@@ -248,12 +265,12 @@ struct send_list* send_list_new(){
 }
 
 void send_list_add(struct send_list** list, uint32_t dstIP, uint8_t* payload, unsigned int len, char* iface, uint16_t type, time_t now){
-   assert(*list);
+   assert(list);
    assert(payload);
    assert(iface);
    
    struct send_list* new_list = (struct send_list*) malloc_or_die(sizeof(struct send_list));
-
+   
    new_list->IP = dstIP;
    new_list->iface = iface;
    new_list->payload = payload;
@@ -262,6 +279,9 @@ void send_list_add(struct send_list** list, uint32_t dstIP, uint8_t* payload, un
    new_list->type = type;
    new_list->next = *list;
    *list= new_list;
+   
+   printf("**********    %s   added a packet to the queue waiting for ARP\n", __func__);
+   
 }
 
 int send_list_send(struct send_list* list, struct sr_instance* sr, uint32_t* dstIP, uint8_t* dstMAC){

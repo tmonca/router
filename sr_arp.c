@@ -22,14 +22,23 @@
  then returns the pointer to the new entry
  */
 
-void add_cache_entry(struct arp_cache_list** headRef, uint32_t IP, uint8_t MAC[6], time_t created){
-  struct arp_cache_list* new_entry = (struct arp_cache_list*) malloc_or_die(sizeof(struct arp_cache_list));
-  //arp_cache_list* Tmp = (arp_cache_list*) malloc_or_die(sizeof(arp_cache_list)); 
-  new_entry->IP = IP;
-  mac_copy(MAC, new_entry->MAC);
-  new_entry->created = created;
-  new_entry->next = *headRef;
-  *headRef= new_entry;
+void add_cache_entry(struct sr_instance* sr, uint32_t IP, uint8_t MAC[6], time_t created){
+   assert(sr);
+   struct sr_router* subs = (struct sr_router*)sr_get_subsystem(sr);
+   assert(subs);
+   struct arp_cache_list* new_entry = (struct arp_cache_list*) malloc_or_die(sizeof(struct arp_cache_list));
+   new_entry->IP = IP;
+   mac_copy(MAC, new_entry->MAC);
+   new_entry->created = created;
+   
+   if(subs->arp_cache == NULL){ /* there was no pre-extant cache*/
+      new_entry->next = NULL;
+      subs->arp_cache = new_entry;
+      return;
+   }
+   //headRef = &subs->arp_cache;
+   new_entry->next = subs->arp_cache;
+   subs->arp_cache = new_entry;
   
 }
 
@@ -40,14 +49,23 @@ void add_cache_entry(struct arp_cache_list** headRef, uint32_t IP, uint8_t MAC[6
  or 0 if nothing has been found (or list doesn't exist yet)
  */
 
-int find_and_update(struct arp_cache_list* head, uint32_t IP, uint8_t MAC[6], time_t now){
+int find_and_update(struct sr_instance* sr, uint32_t IP, uint8_t MAC[6], time_t now){
+   assert(sr);
+   struct sr_router* subs = (struct sr_router*)sr_get_subsystem(sr);
+   assert(subs);
+   struct arp_cache_list* head = (struct arp_cache_list*)malloc_or_die(sizeof(struct arp_cache_list));
+   head = subs->arp_cache;
   
-  while (head != NULL){
-    if (head->IP == IP){
-      break;
-    }
-    head = head->next;
-  }
+  
+  //  CHANGING TO sr_instance from arp_cache_list
+  
+  
+   while (head != NULL){
+      if (head->IP == IP){
+         break;
+      }
+      head = head->next;
+   }
   if(head != NULL){
     mac_copy(MAC, head->MAC);
     head->created = now;
@@ -56,16 +74,22 @@ int find_and_update(struct arp_cache_list* head, uint32_t IP, uint8_t MAC[6], ti
   }
   else{
      printf("***********  I didn't already have it in cache, so I will add it\n");
-     add_cache_entry(&head, IP, MAC, now);
+     add_cache_entry(sr, IP, MAC, now);
     return 0;
   }
   
 }
 
-uint8_t* find_mac_in_cache(struct arp_cache_list* head, uint32_t IP){
-  unsigned char* MAC = (unsigned char*) malloc_or_die(6* sizeof(unsigned char));
+uint8_t* find_mac_in_cache(struct sr_instance* sr, uint32_t IP){
+   assert(sr);
+   struct sr_router* subs = (struct sr_router*)sr_get_subsystem(sr);
+   assert(subs);
+   struct arp_cache_list* head = (struct arp_cache_list*)malloc_or_die(sizeof(struct arp_cache_list));
+   head = subs->arp_cache;
+   unsigned char* MAC = (unsigned char*) malloc_or_die(6* sizeof(unsigned char));
   
-  while (head != NULL){
+   while (head != NULL){
+    printf(" ~~~~~~~~~~~~~~~~~~   IP = 0x%x, looking for 0x%x\n", head->IP, IP);
     if(head->IP == IP){
       break;
     }
@@ -162,7 +186,7 @@ int process_arp(struct sr_instance* sr, char* intf, struct sr_arphdr* arp){
       //this is our packet
       //look for an existing entry (and update if needed)
       time_t now = time(NULL);
-      if(find_and_update(sub->arp_cache, arp->ar_sip, arp->ar_sha, now)){
+      if(find_and_update(sr, arp->ar_sip, arp->ar_sha, now)){
          printf("*****************  %s   Found an entry and updated it \n", __func__);
       }
       
@@ -254,20 +278,30 @@ int arp_lookup(struct sr_instance * sr, char* interface, uint8_t* payload, uint3
    struct sr_ethernet_hdr* ethHdr = (struct sr_ethernet_hdr*) malloc_or_die(sizeof(struct sr_ethernet_hdr));
    struct sr_vns_if* intf = sr_get_interface(sr, interface);
    struct sr_router* sub = (struct sr_router*)sr_get_subsystem(sr);
-
+   int rtn;
 
    uint8_t src[6];
    mac_copy(intf->addr, ethHdr->ether_shost);
    
    uint8_t* dst;
-   dst = find_mac_in_cache(sub->arp_cache, dstIP);
-   if(dst == NULL){
-      //we need to send off an arp request
+   dst = find_mac_in_cache(sr, dstIP);
+   if(dst != NULL){
+      dst = array_cpy(&ethHdr->ether_dhost, 6);
+      
+      printf("*************      %s    We got  ARP    ******************\n", __func__);
+      
+      return 1;
+
+   }
+   //else we need to send off an arp request
+   printf("*************      %s    send ARP    ******************\n", __func__);
+   rtn = send_arp_request(sr, interface, payload, dstIP, len);
+   if(rtn == 1){
+      
       return 2;
    }
    else{
-      dst = array_cpy(&ethHdr->ether_dhost, 6);
-      return 1;
+      return 0;
    }
    return 0;
 }
@@ -277,6 +311,8 @@ int arp_lookup(struct sr_instance * sr, char* interface, uint8_t* payload, uint3
 int send_arp_request(struct sr_instance * sr, char* iface, uint8_t* payload, uint32_t dstIP, unsigned int len){
    // create an ARP request bound for 0xffffff/dstIP, source as in interface
    // add a send_list entry for payload, dstIP, now
+   printf("************   %s    so sending ARP request\n", __func__);
+   
    time_t now = time(NULL);
    int rtn = 0;
    struct send_list* new = (struct send_list*)malloc_or_die(sizeof(struct send_list));
@@ -307,6 +343,7 @@ int send_arp_request(struct sr_instance * sr, char* iface, uint8_t* payload, uin
    newPkt = create_ethernet_frame(tmpHdr, tmparp, 28);
    //pad the frame somehow?
    //now we send it using sr_integ_low_level_output
+   printf("£££££££££££££££££££££££££££££££££\n");
    if((sr_integ_low_level_output(sr, newPkt, (unsigned int)arp_pkt_len, iface)) == 0){
       printf("**********         %s   successfully sent an ARP request\n", __func__);
       rtn = 1;
