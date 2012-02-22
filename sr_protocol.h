@@ -168,13 +168,20 @@ struct sr_ip_pkt
   uint8_t* payload;
 };
 
-struct sr_icmp_pkt
+struct sr_icmp_hdr
 {
    uint8_t type;
    uint8_t code;
    uint16_t checksum;
-   uint16_t field1;
-   uint16_t field2;
+   //uint8_t code;
+   //uint8_t type;
+   /* these are all assuming that it comes in "backwards" */
+   
+};
+
+struct sr_icmp_pkt
+{
+   struct sr_icmp_hdr header;
    uint8_t* data;
 };
 

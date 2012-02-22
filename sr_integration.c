@@ -112,8 +112,7 @@ void sr_integ_input(struct sr_instance* sr,
    
    printf("*** -> Received packet of length %d \n",len);
    int check, tmp;
-   struct sr_eth_pkt* Frame;
-   Frame = (struct sr_eth_pkt*) malloc_or_die(len);    
+   struct sr_eth_pkt* Frame = (struct sr_eth_pkt*) malloc_or_die(len);    
    Frame = read_ethernet_frame(packet, len);
    
    printf("\n passed the processed frame back to %s\n", __func__);  
@@ -137,7 +136,9 @@ void sr_integ_input(struct sr_instance* sr,
       }
    }
    else if (tmpType == ETHERTYPE_IP){
-      struct sr_ip_pkt* Pkt = read_ip_pkt(Frame->payload, (len-14));
+      printf(" !!!!!!!!!!!!!!!!       passing %d - 14 bytes\n", len);
+      struct sr_ip_pkt* Pkt = (struct sr_ip_pkt*) malloc_or_die(len - 14);
+      Pkt = read_ip_pkt(Frame->payload, (len-14));
       
       printf("***@***@***@***@***     IP PACKET    @***@***@***@***\n");
       check = handle_ip_pkt(sr, Pkt, interface, (len-14), srcMAC);

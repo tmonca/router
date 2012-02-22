@@ -286,9 +286,32 @@ int arp_lookup(struct sr_instance * sr, char* interface, uint8_t* payload, uint3
    uint8_t* dst;
    dst = find_mac_in_cache(sr, dstIP);
    if(dst != NULL){
-      dst = array_cpy(&ethHdr->ether_dhost, 6);
+      mac_copy(dst, ethHdr->ether_dhost);
+      mac_copy(intf->addr, ethHdr->ether_shost);
+      ethHdr->ether_type = htons(ETHERTYPE_IP);
       
       printf("*************      %s    We got  ARP    ******************\n", __func__);
+      
+      //so send the bally thing
+      
+      
+     // ?? do we still have valid ICMP packet with us? Apparently not
+      
+      
+      uint8_t* newPkt = (uint8_t*) malloc_or_die(len+14);
+      newPkt = create_ethernet_frame(ethHdr, payload, len);
+      //pad the frame somehow?
+      //now we send it using sr_integ_low_level_output
+      printf("£££££££££££££££££££££££££££££££££\n");
+      if((sr_integ_low_level_output(sr, newPkt, len+14, interface)) == 0){
+         printf("**********         %s   successfully sent a packet\n", __func__);
+         rtn = 1;
+      }
+      else {
+         printf("\n @@@@@@@@@@@@@@@@@@@@        @@@@@@@@@@@@@@@@     %s  sending packet failed?\n", __func__);
+         rtn =  0;
+      }
+
       
       return 1;
 
