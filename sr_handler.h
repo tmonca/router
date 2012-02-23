@@ -12,6 +12,7 @@
 #include "sr_router.h"
 #include "sr_arp.h"
 #include "sr_help.h"
+#include "sr_integration.h"
 
 struct send_list
 {
@@ -36,7 +37,7 @@ int make_and_send(struct sr_instance*, char*, uint32_t, uint8_t*, unsigned int, 
 
 int process_ICMP_pkt(struct sr_instance*, char* , uint32_t, uint8_t*, unsigned int);
 
-int create_ICMP_pkt(struct sr_instance*, char*, uint32_t, uint8_t, uint8_t, uint8_t*, unsigned int);
+int create_ICMP_pkt(struct sr_instance*, char*, uint32_t, uint8_t, uint8_t, uint16_t, uint16_t, uint8_t*, unsigned int);
 
 struct send_list* send_list_new();
 

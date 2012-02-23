@@ -4,17 +4,17 @@
 
 
 void mac_copy(uint8_t in[], uint8_t out[]){
-  printf("MAC in is ");
+ // printf("MAC in is ");
   int i;
   for(i = 0; i < 6; i++){
-    printf("0x%hhx:", in[i]);
+    //printf("0x%hhx:", in[i]);
     out[i] = in[i];
   }
-  printf(" and MAC out is ");
+  //printf(" and MAC out is ");
   for(i = 0; i < 6; i++){
-    printf("0x%hhx:", out[i]);
+   // printf("0x%hhx:", out[i]);
   }
-  printf("\n");
+ // printf("\n");
 }
 
 void mac_broadcast(uint8_t dst[]){
@@ -32,6 +32,56 @@ uint8_t* array_cpy(void* in, unsigned int len){
    int i;
    for(i = 0; i < len; i++){
       output[i] = input[i];
+   }
+   return output;
+}
+
+uint8_t* array_cpy_v(void* in, unsigned int len){
+   uint8_t* output = (uint8_t*) malloc_or_die(len);
+   uint8_t* input = (uint8_t*) in;
+   int i;
+   for(i = 0; i < len; i++){
+      printf("%x->", input[i]);
+      output[i] = input[i];
+      printf("%x ", output[i]);
+   }
+   printf("\n");
+   return output;
+}
+
+uint8_t* array_join_v(void* in1, void* in2, unsigned int len1, unsigned int len2){
+   uint8_t* output = (uint8_t*) malloc_or_die(len1 + len2);
+   uint8_t* input1 = (uint8_t*) in1;
+   uint8_t* input2 = (uint8_t*) in2;
+   
+   int i;
+   printf("\n");
+   for(i = 0; i < len1 ; i++){
+      printf("%x->", input1[i]);
+      output[i] = input1[i];
+      printf("%x ", output[i]);
+   }
+   printf("\n");
+   for(i = 0; i < len2 ; i++){
+      printf("%x->", input2[i]);
+      output[i+len1] = input2[i];
+      printf("%x ", output[i+len1]);
+   }
+   printf("\n");
+   return output;
+}
+
+uint8_t* array_join(void* in1, void* in2, unsigned int len1, unsigned int len2){
+   uint8_t* output = (uint8_t*) malloc_or_die(len1 + len2);
+   uint8_t* input1 = (uint8_t*) in1;
+   uint8_t* input2 = (uint8_t*) in2;
+   
+   int i;
+     for(i = 0; i < len1 ; i++){
+      output[i] = input1[i];
+   }
+   for(i = 0; i < len2 ; i++){
+      output[i+len1] = input2[i];
    }
    return output;
 }
@@ -95,5 +145,12 @@ uint16_t cksum(uint8_t* data, int len){
 time_t now(){
    time_t now = time(NULL);
    return now;
+}
+
+void print_icmp_pkt(struct sr_icmp_hdr* packet){
+   
+   printf("ICMP packet type = %hhx, code = %hhx, check = %hx\n field1 is: %hx field2 is: %hx", packet->type, packet->code, packet->checksum, packet->field1, packet->field2);
+   
+   printf("\n\n");
 }
  

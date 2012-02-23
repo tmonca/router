@@ -1,5 +1,6 @@
 
 #include "sr_handler.h"
+#include "sr_if.h"
 
 
 /*--------------------------------------------------------------------- 
@@ -97,7 +98,7 @@ int handle_ip_pkt(struct sr_instance* sr, struct sr_ip_pkt* Pkt, char* interface
     assert(sr);
     assert(interface);
     
-   struct sr_router* subsystem = (struct sr_router*)sr_get_subsystem(sr);
+   //struct sr_router* subsystem = (struct sr_router*)sr_get_subsystem(sr);
    
    struct sr_vns_if* myIntf = sr_get_interface(sr, interface); 
    uint32_t myIP = myIntf->ip;
@@ -126,7 +127,8 @@ int handle_ip_pkt(struct sr_instance* sr, struct sr_ip_pkt* Pkt, char* interface
          int datalen = len - sizeof(struct ip);
          printf("After removing the IP header we are left with %d bytes\n", datalen);
          uint8_t* ICMP = (uint8_t*) malloc_or_die(datalen);
-         ICMP = array_cpy(Pkt->payload, datalen);
+         //ICMP = array_cpy(Pkt->payload, datalen);
+         memcpy(ICMP, Pkt->payload, datalen);
          int tmp;
          tmp = process_ICMP_pkt(sr, interface, originIP, ICMP, datalen); 
          return tmp;
@@ -158,25 +160,30 @@ int process_ICMP_pkt(struct sr_instance* sr, char* interface, uint32_t srcIP, ui
       printf("@@@@@@@@@@@@@@@@@@@@@@    CHECKSUM WAS INVALID SO WE WILL DROP THE PACKET\n");
       return -2;
    }
-   
-   //then cast the packet into an ICMP proto-packet
-   uint8_t* tmp = array_cpy(packet, 4);
-   struct sr_icmp_hdr* tmpH = (struct sr_icmp_hdr*) malloc_or_die(sizeof(struct sr_icmp_hdr));
-   tmpH = (struct sr_icmp_hdr*)tmp;
-   struct sr_icmp_pkt* ICMP = (struct sr_icmp_pkt*)malloc_or_die(len);
-   ICMP->header = *tmpH;
-   //can I  do this by memcpy? seemingly no...
-   tmp = array_cpy(packet+4, 2);
-   if(len >4){
-      ICMP->data = array_cpy(packet+4, len - 4);
+#if 0   
+   printf("********* at %s    ICMP Packet is 0x ", __func__);
+   int i ;
+   for(i = 0; i < len; i++){
+      printf("%x", packet[i]);
    }
+   printf("\n");
+#endif  
+   //then cast the packet into an ICMP proto-packet
+   
+   struct sr_icmp_hdr* tmpH = (struct sr_icmp_hdr*) malloc_or_die(sizeof(struct sr_icmp_hdr));
+   tmpH = (struct sr_icmp_hdr*)packet;
+   uint16_t field1 = tmpH->field1;
+   uint16_t field2 = tmpH->field2;
+   
    //then identify the type. Assume we mainly have to deal with echo request (what to do with errors coming back?)
-   uint8_t type = ICMP->header.type;
+   uint8_t type = tmpH->type;
    switch(type){
       case 8:
          //call create ICMP with type echo response
          printf("len = %d\n", len);
-         rtn = create_ICMP_pkt(sr, interface, srcIP, 0, 0, ICMP->data, len - 4);
+         uint8_t* data = (uint8_t*)malloc_or_die(len - 8);
+         memcpy(data, (packet+8), len-8);
+         rtn = create_ICMP_pkt(sr, interface, srcIP, 0, 0, field1, field2, data, len - 8);
          break;
       default:
          printf("****** DIFFERENT TYPE OF ICMP PACKET (%d). Add code to %s to process it\n", type, __func__);
@@ -198,12 +205,18 @@ int process_ICMP_pkt(struct sr_instance* sr, char* interface, uint32_t srcIP, ui
  * returns 1 on success, 2 on waiting for ARP, 0 on fail, -1 on interface error
  *---------------------------------------------------------------------*/
 
-int create_ICMP_pkt(struct sr_instance* sr, char* interface, uint32_t dstIP, uint8_t type, uint8_t code, uint8_t* data,unsigned int datalen){
+int create_ICMP_pkt(struct sr_instance* sr, char* interface, uint32_t dstIP, uint8_t type, uint8_t code, uint16_t field1, uint16_t field2, uint8_t* data,unsigned int datalen){
    assert(data);
    assert(sr);
    assert(interface);
-   
-   struct sr_icmp_pkt* packet; //now we do cleer things to assign the correct ammonut of memory
+#if 0   
+   printf("********* at %s    Payload is 0x ", __func__);
+   int i ;
+   for(i = 0; i < datalen; i++){
+      printf("%x", data[i]);
+   }
+   printf("\n");
+#endif   
    int len, rtn;
    switch (type){
          
@@ -212,50 +225,48 @@ int create_ICMP_pkt(struct sr_instance* sr, char* interface, uint32_t dstIP, uin
          len = 8 + sizeof(struct ip) + 8; //8byte ICMP hdr, 20byte IP hdr, 8byte IP data
          break; //for now to keep it easy to follow code
       case 0:
-         len = 4 + datalen; // 8byte ICMP hdr, data as in echo rqst allowing for ID and sequence in data 
+         len = sizeof(struct sr_icmp_hdr) + datalen; // 8byte ICMP hdr, data as in echo rqst allowing for ID and sequence in data 
          break;
       default:
          len = 8; //this might not be helpful...
          
    }
-   printf("********   We're assigning %d bytes of memory\n", len);
-   packet = (struct sr_icmp_pkt*) malloc_or_die(len);
+   //printf("********   We're assigning %d bytes of memory\n", len);
+   struct sr_icmp_hdr* packet = (struct sr_icmp_hdr*) malloc_or_die(sizeof(struct sr_icmp_hdr));
    
    // now they all get some std entries
    
-   packet->header.type = type;
-   packet->header.code = code;
-   packet->header.checksum = 0x0; // needs to be 0'ed before calculation
-                           //and then we fill the other entries as appropriate
-   uint8_t* tmp;
-
-   switch(type){
-      case 3:
-      case 11:
-         //packet->field1 = 0x0;
-         //packet->field2 = 0x0;
-         packet->data = array_cpy(data, 28);
-         break;
-      case 0:
-         //data should be the complete set from the echo request. It goes in at packet+4
-         
-         packet->data = array_cpy(data, datalen);
-
-         //will this work? Will this copy all 3 fields?
-         break;
-      default:
-         //packet->field1 = 0x0;
-         //packet->field2 = 0x0;
-         break;
-   }
+   packet->type = type;
+   packet->code = code;
+   packet->checksum = 0x0; // needs to be 0'ed before calculation
+   packet->field1 = field1;
+   packet->field2 = field2;
    
+   //and now we fill the other entries as appropriate
+
+  // printf("********* at %s    After conversion to packet \n ", __func__);
+  // print_icmp_pkt(packet);
+
    //finally we can add a checksum
-   uint16_t check = cksum((uint8_t*)packet, len);
-   packet->header.checksum = check; //But did we need to finddle with endianess?
-                             //now we send the packet
-   //did this work?
+   //uint16_t check = cksum((uint8_t*)packet, len);   // The problem is I can't do this cast apparently
+     
+   //printf("\n\n********* at %s    transferring  0x \n", __func__);
+   //print_icmp_pkt(packet);  
    
-   rtn = make_and_send(sr, interface, dstIP, (uint8_t*)packet, len, IPPROTO_ICMP);
+   uint8_t* Pkt = array_join(packet, data, sizeof(struct sr_icmp_hdr), datalen);
+   
+   //memcpy(Pkt, packet, len); 
+   uint16_t check = cksum(Pkt, len);
+  // printf("\n\n &&&&&&&&&&   the checksum is calculated as %hu\n", check);
+   
+   ((struct sr_icmp_hdr*)Pkt)->checksum = check; 
+
+   // Pkt = icmp_to_raw(packet, len); 
+   
+   //so we still have the issue of how to insert the checksum
+   
+   
+   rtn = make_and_send(sr, interface, dstIP, Pkt, len, IPPROTO_ICMP);
    
    if(rtn == 2){
          printf("*************    ICMP pkt, ARP request sent\n");
@@ -282,7 +293,17 @@ int create_ICMP_pkt(struct sr_instance* sr, char* interface, uint32_t dstIP, uin
  *---------------------------------------------------------------------*/
 
 int make_and_send(struct sr_instance* sr, char * interface, uint32_t dstIP, uint8_t* payld, unsigned int len, uint8_t proto){
-   
+   assert(payld);
+   assert(sr);
+   assert(interface);
+#if 0   
+   printf("********* at %s    Payload is 0x ", __func__);
+   int i ;
+   for(i = 0; i < len; i++){
+      printf("%hhx ", payld[i]);
+   }
+   printf("\n");
+#endif   
    struct sr_vns_if* myIntf = sr_get_interface(sr, interface);
    
    struct ip* ipHdr = (struct ip*) malloc_or_die(20);
@@ -301,10 +322,10 @@ int make_and_send(struct sr_instance* sr, char * interface, uint32_t dstIP, uint
    ipHdr->ip_v = 4;
    
    ipHdr->ip_tos = 0x0;
-   ipHdr->ip_len = len + 20;
-   ipHdr->ip_id = 1638;
+   ipHdr->ip_len = htons(len + 20);
+   ipHdr->ip_id = htons(1638);
    ipHdr->ip_off = 0x0;
-   ipHdr->ip_ttl = 128;
+   ipHdr->ip_ttl = 64;
    ipHdr->ip_p = proto;   // probably always IPPROTO_ICMP for the router
    ipHdr->ip_sum = 0x0;
    ipHdr->ip_src = src;
@@ -318,14 +339,19 @@ int make_and_send(struct sr_instance* sr, char * interface, uint32_t dstIP, uint
    //   Tracking back from sr_arp.c:298
    //  we don't have the valid ICMP here even so go back further
    
+   uint8_t* packet = (uint8_t*) malloc_or_die(len + 20);
+   packet = array_join(ipHdr, payld, 20, len);
    
-   uint8_t* payload = (uint8_t*) malloc_or_die(len + 20);
-   payload = array_cpy(ipHdr, 20);
-   printf("***** \n");
-   uint8_t* temp2 = payload + 20;
-   temp2 = array_cpy(payld, len);
-   printf("*************      %s     ******************\n", __func__);
-   rtn = arp_lookup(sr, interface, payload, dstIP, (len + 20));
+#if 0   
+   printf("\n");
+     
+   for(i = 0; i < len + 20; i++){
+      printf("%hhx ", packet[i]);
+   }
+   printf("\n*************      %s     ******************\n", __func__);
+   
+#endif
+   rtn = arp_lookup(sr, interface, packet, dstIP, (len + 20));
       
    return rtn;
    

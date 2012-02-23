@@ -1,0 +1,20 @@
+
+Still need to do the following:
+
+1)  threading
+
+2) Garbage collection for:
+   a) ARP
+   b) Send Lists
+
+3) Other ICMP packet types (all the error cases)
+
+4) PWOSPF and LPM
+
+5) TCP stuff
+
+
+
+Then I need to do the integration with Hardware
+
+

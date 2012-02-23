@@ -275,14 +275,22 @@ int send_arp_reply(struct sr_instance* sr, char* intf, struct sr_arphdr* arp){
 //retun will be 1 for success, 2 for ARP, 0 for fail
 
 int arp_lookup(struct sr_instance * sr, char* interface, uint8_t* payload, uint32_t dstIP, unsigned int len){
+   
    struct sr_ethernet_hdr* ethHdr = (struct sr_ethernet_hdr*) malloc_or_die(sizeof(struct sr_ethernet_hdr));
    struct sr_vns_if* intf = sr_get_interface(sr, interface);
    struct sr_router* sub = (struct sr_router*)sr_get_subsystem(sr);
-   int rtn;
+   int i, rtn;
 
    uint8_t src[6];
    mac_copy(intf->addr, ethHdr->ether_shost);
+#if 0   
+   printf("********* at %s    Payload is 0x ", __func__);
    
+   for (i = 0; i < len; i++){
+      printf("%x", payload[i]);
+   }
+   printf("\n");
+#endif   
    uint8_t* dst;
    dst = find_mac_in_cache(sr, dstIP);
    if(dst != NULL){
@@ -292,17 +300,11 @@ int arp_lookup(struct sr_instance * sr, char* interface, uint8_t* payload, uint3
       
       printf("*************      %s    We got  ARP    ******************\n", __func__);
       
-      //so send the bally thing
-      
-      
-     // ?? do we still have valid ICMP packet with us? Apparently not
-      
-      
       uint8_t* newPkt = (uint8_t*) malloc_or_die(len+14);
       newPkt = create_ethernet_frame(ethHdr, payload, len);
       //pad the frame somehow?
       //now we send it using sr_integ_low_level_output
-      printf("£££££££££££££££££££££££££££££££££\n");
+
       if((sr_integ_low_level_output(sr, newPkt, len+14, interface)) == 0){
          printf("**********         %s   successfully sent a packet\n", __func__);
          rtn = 1;

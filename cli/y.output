@@ -2,18 +2,18 @@ Grammar
 
     0 $accept: Start $end
 
-    1 @1: /* empty */
+    1 $@1: /* empty */
 
-    2 Start: @1 Command T_NEWLINE
+    2 Start: $@1 Command T_NEWLINE
 
     3 Command: ShowCommand
     4        | ManipCommand
     5        | ActionCommand
     6        | OptionCommand
 
-    7 @2: /* empty */
+    7 $@2: /* empty */
 
-    8 Command: @2 error
+    8 Command: $@2 error
     9        | /* empty */
 
    10 ShowCommand: T_SHOW ShowType
@@ -55,15 +55,15 @@ Grammar
 
    42 TMIorQ: HelpOrQ
 
-   43 @3: /* empty */
+   43 $@3: /* empty */
 
-   44 TMIorQ: @3 error
+   44 TMIorQ: $@3 error
 
    45 WrongOrQ: HelpOrQ
 
-   46 @4: /* empty */
+   46 $@4: /* empty */
 
-   47 WrongOrQ: @4 error
+   47 WrongOrQ: $@4 error
 
    48 ShowTypeVNS: /* empty */
    49            | T_LHOST
@@ -95,34 +95,34 @@ Grammar
 
    72 AddTransOrQ: HelpOrQ
 
-   73 @5: /* empty */
+   73 $@5: /* empty */
 
-   74 AddTransOrQ: @5 error
+   74 AddTransOrQ: $@5 error
 
-   75 @6: /* empty */
+   75 $@6: /* empty */
 
-   76 AddTransOrQ: TAV_IP @6 error
+   76 AddTransOrQ: TAV_IP $@6 error
    77            | TAV_IP TAV_MAC
    78            | TAV_IP TAV_MAC TMIorQ
 
    79 DelTransOrQ: HelpOrQ
 
-   80 @7: /* empty */
+   80 $@7: /* empty */
 
-   81 DelTransOrQ: @7 error
+   81 DelTransOrQ: $@7 error
    82            | TAV_IP
    83            | TAV_IP TMIorQ
 
    84 ManipTypeIPInterface: HelpOrQ
 
-   85 @8: /* empty */
+   85 $@8: /* empty */
 
-   86 ManipTypeIPInterface: @8 error
+   86 ManipTypeIPInterface: $@8 error
    87                     | TAV_STR WrongOrQ
 
-   88 @9: /* empty */
+   88 $@9: /* empty */
 
-   89 ManipTypeIPInterface: TAV_STR TAV_IP @9 error
+   89 ManipTypeIPInterface: TAV_STR TAV_IP $@9 error
    90                     | TAV_STR TAV_IP TAV_IP
    91                     | TAV_STR TAV_IP TAV_IP TMIorQ
    92                     | TAV_STR T_UP
@@ -146,33 +146,33 @@ Grammar
 
   108 RouteAddOrQ: HelpOrQ
 
-  109 @10: /* empty */
+  109 $@10: /* empty */
 
-  110 RouteAddOrQ: @10 error
+  110 RouteAddOrQ: $@10 error
 
-  111 @11: /* empty */
+  111 $@11: /* empty */
 
-  112 RouteAddOrQ: TAV_IP @11 error
+  112 RouteAddOrQ: TAV_IP $@11 error
 
-  113 @12: /* empty */
+  113 $@12: /* empty */
 
-  114 RouteAddOrQ: TAV_IP TAV_IP @12 error
+  114 RouteAddOrQ: TAV_IP TAV_IP $@12 error
 
-  115 @13: /* empty */
+  115 $@13: /* empty */
 
-  116 RouteAddOrQ: TAV_IP TAV_IP TAV_IP @13 error
+  116 RouteAddOrQ: TAV_IP TAV_IP TAV_IP $@13 error
   117            | TAV_IP TAV_IP TAV_IP TAV_STR
   118            | TAV_IP TAV_IP TAV_IP TAV_STR TMIorQ
 
   119 RouteDelOrQ: HelpOrQ
 
-  120 @14: /* empty */
+  120 $@14: /* empty */
 
-  121 RouteDelOrQ: @14 error
+  121 RouteDelOrQ: $@14 error
 
-  122 @15: /* empty */
+  122 $@15: /* empty */
 
-  123 RouteDelOrQ: TAV_IP @15 error
+  123 RouteDelOrQ: TAV_IP $@15 error
   124            | TAV_IP TAV_IP
   125            | TAV_IP TAV_IP TMIorQ
 
@@ -185,9 +185,9 @@ Grammar
 
   132 ActionPing: HelpOrQ
 
-  133 @16: /* empty */
+  133 $@16: /* empty */
 
-  134 ActionPing: @16 error
+  134 ActionPing: $@16 error
   135           | TAV_IP
   136           | T_FLOOD TAV_IP
   137           | T_FLOOD TAV_IP TMIorQ
@@ -197,9 +197,9 @@ Grammar
 
   141 ActionTrace: HelpOrQ
 
-  142 @17: /* empty */
+  142 $@17: /* empty */
 
-  143 ActionTrace: @17 error
+  143 ActionTrace: $@17 error
   144            | TAV_IP
   145            | TAV_IP TMIorQ
 
@@ -215,9 +215,9 @@ Grammar
   152 ActionHelp: HelpOrQ
   153           | HelpOrQ T_ALL
 
-  154 @18: /* empty */
+  154 $@18: /* empty */
 
-  155 ActionHelp: HelpOrQ T_ALL @18 error
+  155 ActionHelp: HelpOrQ T_ALL $@18 error
   156           | HelpOrQ T_SHOW
   157           | HelpOrQ T_SHOW T_HW
   158           | HelpOrQ T_SHOW T_HW T_ABOUT
@@ -264,9 +264,9 @@ Grammar
   199           | HelpOrQ T_UNSET
   200           | HelpOrQ T_UNSET T_VERBOSE
 
-  201 @19: /* empty */
+  201 $@19: /* empty */
 
-  202 ActionHelp: HelpOrQ @19 error
+  202 ActionHelp: HelpOrQ $@19 error
 
   203 HelpOrQ: T_HELP
   204        | T_QUESTION
@@ -341,11 +341,11 @@ $accept (42)
     on left: 0
 Start (43)
     on left: 2, on right: 0
-@1 (44)
+$@1 (44)
     on left: 1, on right: 2
 Command (45)
     on left: 3 4 5 6 8 9, on right: 2
-@2 (46)
+$@2 (46)
     on left: 7, on right: 8
 ShowCommand (47)
     on left: 10, on right: 3
@@ -361,11 +361,11 @@ TMIorQ (52)
     on left: 42 44, on right: 20 22 24 26 30 32 34 38 40 50 52 54 56
     67 69 71 78 83 91 93 95 98 100 107 118 125 137 139 140 145 147
     149 151 210 213
-@3 (53)
+$@3 (53)
     on left: 43, on right: 44
 WrongOrQ (54)
     on left: 45 47, on right: 27 35 41 57 63 87 96 101 214
-@4 (55)
+$@4 (55)
     on left: 46, on right: 47
 ShowTypeVNS (56)
     on left: 48 49 50 51 52 53 54 55 56 57, on right: 15
@@ -377,19 +377,19 @@ ManipTypeIPARP (59)
     on left: 63 64 65 66 67 68 69 70 71, on right: 59
 AddTransOrQ (60)
     on left: 72 74 76 77 78, on right: 64
-@5 (61)
+$@5 (61)
     on left: 73, on right: 74
-@6 (62)
+$@6 (62)
     on left: 75, on right: 76
 DelTransOrQ (63)
     on left: 79 81 82 83, on right: 65
-@7 (64)
+$@7 (64)
     on left: 80, on right: 81
 ManipTypeIPInterface (65)
     on left: 84 86 87 89 90 91 92 93 94 95, on right: 60
-@8 (66)
+$@8 (66)
     on left: 85, on right: 86
-@9 (67)
+$@9 (67)
     on left: 88, on right: 89
 ManipTypeIPOSPF (68)
     on left: 96 97 98 99 100, on right: 61
@@ -397,29 +397,29 @@ ManipTypeIPRoute (69)
     on left: 101 102 103 104 105 106 107, on right: 62
 RouteAddOrQ (70)
     on left: 108 110 112 114 116 117 118, on right: 102
-@10 (71)
+$@10 (71)
     on left: 109, on right: 110
-@11 (72)
+$@11 (72)
     on left: 111, on right: 112
-@12 (73)
+$@12 (73)
     on left: 113, on right: 114
-@13 (74)
+$@13 (74)
     on left: 115, on right: 116
 RouteDelOrQ (75)
     on left: 119 121 123 124 125, on right: 103
-@14 (76)
+$@14 (76)
     on left: 120, on right: 121
-@15 (77)
+$@15 (77)
     on left: 122, on right: 123
 ActionCommand (78)
     on left: 126 127 128 129 130 131, on right: 5
 ActionPing (79)
     on left: 132 134 135 136 137 138 139 140, on right: 126
-@16 (80)
+$@16 (80)
     on left: 133, on right: 134
 ActionTrace (81)
     on left: 141 143 144 145, on right: 127
-@17 (82)
+$@17 (82)
     on left: 142, on right: 143
 ActionDate (83)
     on left: 146 147, on right: 128
@@ -432,9 +432,9 @@ ActionHelp (86)
     167 168 169 170 171 172 173 174 175 176 177 178 179 180 181 182
     183 184 185 186 187 188 189 190 191 192 193 194 195 196 197 198
     199 200 202, on right: 131
-@18 (87)
+$@18 (87)
     on left: 154, on right: 155
-@19 (88)
+$@19 (88)
     on left: 201, on right: 202
 HelpOrQ (89)
     on left: 203 204, on right: 17 42 45 72 79 84 108 119 132 141 152
@@ -456,10 +456,10 @@ state 0
 
     0 $accept: . Start $end
 
-    $default  reduce using rule 1 (@1)
+    $default  reduce using rule 1 ($@1)
 
     Start  go to state 1
-    @1     go to state 2
+    $@1    go to state 2
 
 
 state 1
@@ -471,7 +471,7 @@ state 1
 
 state 2
 
-    2 Start: @1 . Command T_NEWLINE
+    2 Start: $@1 . Command T_NEWLINE
 
     T_SHOW      shift, and go to state 4
     T_QUESTION  shift, and go to state 5
@@ -486,10 +486,10 @@ state 2
     T_DATE      shift, and go to state 14
 
     T_NEWLINE  reduce using rule 9 (Command)
-    $default   reduce using rule 7 (@2)
+    $default   reduce using rule 7 ($@2)
 
     Command         go to state 15
-    @2              go to state 16
+    $@2             go to state 16
     ShowCommand     go to state 17
     ManipCommand    go to state 18
     ActionCommand   go to state 19
@@ -555,10 +555,10 @@ state 7
     T_FLOOD     shift, and go to state 39
     TAV_IP      shift, and go to state 40
 
-    $default  reduce using rule 133 (@16)
+    $default  reduce using rule 133 ($@16)
 
     ActionPing  go to state 41
-    @16         go to state 42
+    $@16        go to state 42
     HelpOrQ     go to state 43
 
 
@@ -570,10 +570,10 @@ state 8
     T_HELP      shift, and go to state 9
     TAV_IP      shift, and go to state 44
 
-    $default  reduce using rule 142 (@17)
+    $default  reduce using rule 142 ($@17)
 
     ActionTrace  go to state 45
-    @17          go to state 46
+    $@17         go to state 46
     HelpOrQ      go to state 47
 
 
@@ -593,10 +593,10 @@ state 10
     T_HELP      shift, and go to state 9
 
     T_NEWLINE  reduce using rule 148 (ActionExit)
-    $default   reduce using rule 43 (@3)
+    $default   reduce using rule 43 ($@3)
 
     TMIorQ   go to state 48
-    @3       go to state 49
+    $@3      go to state 49
     HelpOrQ  go to state 50
 
 
@@ -609,10 +609,10 @@ state 11
     T_HELP      shift, and go to state 9
 
     T_NEWLINE  reduce using rule 150 (ActionShutdown)
-    $default   reduce using rule 43 (@3)
+    $default   reduce using rule 43 ($@3)
 
     TMIorQ   go to state 51
-    @3       go to state 49
+    $@3      go to state 49
     HelpOrQ  go to state 50
 
 
@@ -639,23 +639,23 @@ state 14
     T_HELP      shift, and go to state 9
 
     T_NEWLINE  reduce using rule 146 (ActionDate)
-    $default   reduce using rule 43 (@3)
+    $default   reduce using rule 43 ($@3)
 
     TMIorQ   go to state 52
-    @3       go to state 49
+    $@3      go to state 49
     HelpOrQ  go to state 50
 
 
 state 15
 
-    2 Start: @1 Command . T_NEWLINE
+    2 Start: $@1 Command . T_NEWLINE
 
     T_NEWLINE  shift, and go to state 53
 
 
 state 16
 
-    8 Command: @2 . error
+    8 Command: $@2 . error
 
     error  shift, and go to state 54
 
@@ -713,7 +713,7 @@ state 24
 
   152 ActionHelp: HelpOrQ .
   153           | HelpOrQ . T_ALL
-  155           | HelpOrQ . T_ALL @18 error
+  155           | HelpOrQ . T_ALL $@18 error
   156           | HelpOrQ . T_SHOW
   157           | HelpOrQ . T_SHOW T_HW
   158           | HelpOrQ . T_SHOW T_HW T_ABOUT
@@ -759,7 +759,7 @@ state 24
   198           | HelpOrQ . T_SET T_VERBOSE
   199           | HelpOrQ . T_UNSET
   200           | HelpOrQ . T_UNSET T_VERBOSE
-  202           | HelpOrQ . @19 error
+  202           | HelpOrQ . $@19 error
 
     T_SHOW      shift, and go to state 55
     T_ALL       shift, and go to state 56
@@ -772,10 +772,10 @@ state 24
     T_UNSET     shift, and go to state 63
     T_DATE      shift, and go to state 64
 
-    error     reduce using rule 201 (@19)
+    error     reduce using rule 201 ($@19)
     $default  reduce using rule 152 (ActionHelp)
 
-    @19  go to state 65
+    $@19  go to state 65
 
 
 state 25
@@ -809,10 +809,10 @@ state 27
     T_HELP      shift, and go to state 9
 
     T_NEWLINE  reduce using rule 48 (ShowTypeVNS)
-    $default   reduce using rule 46 (@4)
+    $default   reduce using rule 46 ($@4)
 
     WrongOrQ     go to state 73
-    @4           go to state 74
+    $@4          go to state 74
     ShowTypeVNS  go to state 75
     HelpOrQ      go to state 76
 
@@ -827,12 +827,12 @@ state 28
     T_ARP       shift, and go to state 79
     T_HELP      shift, and go to state 9
 
-    error     reduce using rule 46 (@4)
+    error     reduce using rule 46 ($@4)
     $default  reduce using rule 28 (ShowTypeIP)
 
     ShowTypeIP  go to state 80
     WrongOrQ    go to state 81
-    @4          go to state 74
+    $@4         go to state 74
     HelpOrQ     go to state 76
 
 
@@ -845,12 +845,12 @@ state 29
     T_NEIGHBORS  shift, and go to state 83
     T_HELP       shift, and go to state 9
 
-    error     reduce using rule 46 (@4)
+    error     reduce using rule 46 ($@4)
     $default  reduce using rule 36 (ShowTypeOSPF)
 
     ShowTypeOSPF  go to state 84
     WrongOrQ      go to state 85
-    @4            go to state 74
+    $@4           go to state 74
     HelpOrQ       go to state 76
 
 
@@ -865,12 +865,12 @@ state 30
     T_ABOUT     shift, and go to state 89
     T_HELP      shift, and go to state 9
 
-    error     reduce using rule 46 (@4)
+    error     reduce using rule 46 ($@4)
     $default  reduce using rule 18 (ShowTypeHW)
 
     ShowTypeHW  go to state 90
     WrongOrQ    go to state 91
-    @4          go to state 74
+    $@4         go to state 74
     HelpOrQ     go to state 76
 
 
@@ -883,10 +883,10 @@ state 31
     T_VERBOSE   shift, and go to state 92
 
     T_NEWLINE  reduce using rule 211 (ShowTypeOption)
-    $default   reduce using rule 46 (@4)
+    $default   reduce using rule 46 ($@4)
 
     WrongOrQ        go to state 93
-    @4              go to state 74
+    $@4             go to state 74
     HelpOrQ         go to state 76
     ShowTypeOption  go to state 94
 
@@ -915,10 +915,10 @@ state 34
     T_PURGE     shift, and go to state 97
     T_HELP      shift, and go to state 9
 
-    $default  reduce using rule 46 (@4)
+    $default  reduce using rule 46 ($@4)
 
     WrongOrQ          go to state 98
-    @4                go to state 74
+    $@4               go to state 74
     ManipTypeIPRoute  go to state 99
     HelpOrQ           go to state 76
 
@@ -931,10 +931,10 @@ state 35
     T_HELP      shift, and go to state 9
     TAV_STR     shift, and go to state 100
 
-    $default  reduce using rule 85 (@8)
+    $default  reduce using rule 85 ($@8)
 
     ManipTypeIPInterface  go to state 101
-    @8                    go to state 102
+    $@8                   go to state 102
     HelpOrQ               go to state 103
 
 
@@ -948,10 +948,10 @@ state 36
     T_PURGE     shift, and go to state 106
     T_HELP      shift, and go to state 9
 
-    $default  reduce using rule 46 (@4)
+    $default  reduce using rule 46 ($@4)
 
     WrongOrQ        go to state 107
-    @4              go to state 74
+    $@4             go to state 74
     ManipTypeIPARP  go to state 108
     HelpOrQ         go to state 76
 
@@ -965,10 +965,10 @@ state 37
     T_DOWN      shift, and go to state 110
     T_HELP      shift, and go to state 9
 
-    $default  reduce using rule 46 (@4)
+    $default  reduce using rule 46 ($@4)
 
     WrongOrQ         go to state 111
-    @4               go to state 74
+    $@4              go to state 74
     ManipTypeIPOSPF  go to state 112
     HelpOrQ          go to state 76
 
@@ -1000,10 +1000,10 @@ state 40
     T_HELP      shift, and go to state 9
 
     T_NEWLINE  reduce using rule 135 (ActionPing)
-    $default   reduce using rule 43 (@3)
+    $default   reduce using rule 43 ($@3)
 
     TMIorQ   go to state 115
-    @3       go to state 49
+    $@3      go to state 49
     HelpOrQ  go to state 50
 
 
@@ -1016,7 +1016,7 @@ state 41
 
 state 42
 
-  134 ActionPing: @16 . error
+  134 ActionPing: $@16 . error
 
     error  shift, and go to state 116
 
@@ -1037,10 +1037,10 @@ state 44
     T_HELP      shift, and go to state 9
 
     T_NEWLINE  reduce using rule 144 (ActionTrace)
-    $default   reduce using rule 43 (@3)
+    $default   reduce using rule 43 ($@3)
 
     TMIorQ   go to state 117
-    @3       go to state 49
+    $@3      go to state 49
     HelpOrQ  go to state 50
 
 
@@ -1053,7 +1053,7 @@ state 45
 
 state 46
 
-  143 ActionTrace: @17 . error
+  143 ActionTrace: $@17 . error
 
     error  shift, and go to state 118
 
@@ -1074,7 +1074,7 @@ state 48
 
 state 49
 
-   44 TMIorQ: @3 . error
+   44 TMIorQ: $@3 . error
 
     error  shift, and go to state 119
 
@@ -1102,14 +1102,14 @@ state 52
 
 state 53
 
-    2 Start: @1 Command T_NEWLINE .
+    2 Start: $@1 Command T_NEWLINE .
 
     $default  reduce using rule 2 (Start)
 
 
 state 54
 
-    8 Command: @2 error .
+    8 Command: $@2 error .
 
     $default  reduce using rule 8 (Command)
 
@@ -1149,12 +1149,12 @@ state 55
 state 56
 
   153 ActionHelp: HelpOrQ T_ALL .
-  155           | HelpOrQ T_ALL . @18 error
+  155           | HelpOrQ T_ALL . $@18 error
 
-    error     reduce using rule 154 (@18)
+    error     reduce using rule 154 ($@18)
     $default  reduce using rule 153 (ActionHelp)
 
-    @18  go to state 125
+    $@18  go to state 125
 
 
 state 57
@@ -1240,7 +1240,7 @@ state 64
 
 state 65
 
-  202 ActionHelp: HelpOrQ @19 . error
+  202 ActionHelp: HelpOrQ $@19 . error
 
     error  shift, and go to state 131
 
@@ -1254,10 +1254,10 @@ state 66
     T_HELP      shift, and go to state 9
 
     T_NEWLINE  reduce using rule 209 (Option)
-    $default   reduce using rule 43 (@3)
+    $default   reduce using rule 43 ($@3)
 
     TMIorQ   go to state 132
-    @3       go to state 49
+    $@3      go to state 49
     HelpOrQ  go to state 50
 
 
@@ -1284,10 +1284,10 @@ state 69
     T_HELP      shift, and go to state 9
 
     T_NEWLINE  reduce using rule 53 (ShowTypeVNS)
-    $default   reduce using rule 43 (@3)
+    $default   reduce using rule 43 ($@3)
 
     TMIorQ   go to state 133
-    @3       go to state 49
+    $@3      go to state 49
     HelpOrQ  go to state 50
 
 
@@ -1300,10 +1300,10 @@ state 70
     T_HELP      shift, and go to state 9
 
     T_NEWLINE  reduce using rule 55 (ShowTypeVNS)
-    $default   reduce using rule 43 (@3)
+    $default   reduce using rule 43 ($@3)
 
     TMIorQ   go to state 134
-    @3       go to state 49
+    $@3      go to state 49
     HelpOrQ  go to state 50
 
 
@@ -1316,10 +1316,10 @@ state 71
     T_HELP      shift, and go to state 9
 
     T_NEWLINE  reduce using rule 49 (ShowTypeVNS)
-    $default   reduce using rule 43 (@3)
+    $default   reduce using rule 43 ($@3)
 
     TMIorQ   go to state 135
-    @3       go to state 49
+    $@3      go to state 49
     HelpOrQ  go to state 50
 
 
@@ -1332,10 +1332,10 @@ state 72
     T_HELP      shift, and go to state 9
 
     T_NEWLINE  reduce using rule 51 (ShowTypeVNS)
-    $default   reduce using rule 43 (@3)
+    $default   reduce using rule 43 ($@3)
 
     TMIorQ   go to state 136
-    @3       go to state 49
+    $@3      go to state 49
     HelpOrQ  go to state 50
 
 
@@ -1348,7 +1348,7 @@ state 73
 
 state 74
 
-   47 WrongOrQ: @4 . error
+   47 WrongOrQ: $@4 . error
 
     error  shift, and go to state 137
 
@@ -1375,11 +1375,11 @@ state 77
     T_QUESTION  shift, and go to state 5
     T_HELP      shift, and go to state 9
 
-    error     reduce using rule 43 (@3)
+    error     reduce using rule 43 ($@3)
     $default  reduce using rule 33 (ShowTypeIP)
 
     TMIorQ   go to state 138
-    @3       go to state 49
+    $@3      go to state 49
     HelpOrQ  go to state 50
 
 
@@ -1391,11 +1391,11 @@ state 78
     T_QUESTION  shift, and go to state 5
     T_HELP      shift, and go to state 9
 
-    error     reduce using rule 43 (@3)
+    error     reduce using rule 43 ($@3)
     $default  reduce using rule 31 (ShowTypeIP)
 
     TMIorQ   go to state 139
-    @3       go to state 49
+    $@3      go to state 49
     HelpOrQ  go to state 50
 
 
@@ -1407,11 +1407,11 @@ state 79
     T_QUESTION  shift, and go to state 5
     T_HELP      shift, and go to state 9
 
-    error     reduce using rule 43 (@3)
+    error     reduce using rule 43 ($@3)
     $default  reduce using rule 29 (ShowTypeIP)
 
     TMIorQ   go to state 140
-    @3       go to state 49
+    $@3      go to state 49
     HelpOrQ  go to state 50
 
 
@@ -1437,11 +1437,11 @@ state 82
     T_QUESTION  shift, and go to state 5
     T_HELP      shift, and go to state 9
 
-    error     reduce using rule 43 (@3)
+    error     reduce using rule 43 ($@3)
     $default  reduce using rule 39 (ShowTypeOSPF)
 
     TMIorQ   go to state 141
-    @3       go to state 49
+    $@3      go to state 49
     HelpOrQ  go to state 50
 
 
@@ -1453,11 +1453,11 @@ state 83
     T_QUESTION  shift, and go to state 5
     T_HELP      shift, and go to state 9
 
-    error     reduce using rule 43 (@3)
+    error     reduce using rule 43 ($@3)
     $default  reduce using rule 37 (ShowTypeOSPF)
 
     TMIorQ   go to state 142
-    @3       go to state 49
+    $@3      go to state 49
     HelpOrQ  go to state 50
 
 
@@ -1483,11 +1483,11 @@ state 86
     T_QUESTION  shift, and go to state 5
     T_HELP      shift, and go to state 9
 
-    error     reduce using rule 43 (@3)
+    error     reduce using rule 43 ($@3)
     $default  reduce using rule 25 (ShowTypeHW)
 
     TMIorQ   go to state 143
-    @3       go to state 49
+    $@3      go to state 49
     HelpOrQ  go to state 50
 
 
@@ -1499,11 +1499,11 @@ state 87
     T_QUESTION  shift, and go to state 5
     T_HELP      shift, and go to state 9
 
-    error     reduce using rule 43 (@3)
+    error     reduce using rule 43 ($@3)
     $default  reduce using rule 23 (ShowTypeHW)
 
     TMIorQ   go to state 144
-    @3       go to state 49
+    $@3      go to state 49
     HelpOrQ  go to state 50
 
 
@@ -1515,11 +1515,11 @@ state 88
     T_QUESTION  shift, and go to state 5
     T_HELP      shift, and go to state 9
 
-    error     reduce using rule 43 (@3)
+    error     reduce using rule 43 ($@3)
     $default  reduce using rule 21 (ShowTypeHW)
 
     TMIorQ   go to state 145
-    @3       go to state 49
+    $@3      go to state 49
     HelpOrQ  go to state 50
 
 
@@ -1531,11 +1531,11 @@ state 89
     T_QUESTION  shift, and go to state 5
     T_HELP      shift, and go to state 9
 
-    error     reduce using rule 43 (@3)
+    error     reduce using rule 43 ($@3)
     $default  reduce using rule 19 (ShowTypeHW)
 
     TMIorQ   go to state 146
-    @3       go to state 49
+    $@3      go to state 49
     HelpOrQ  go to state 50
 
 
@@ -1562,10 +1562,10 @@ state 92
     T_HELP      shift, and go to state 9
 
     T_NEWLINE  reduce using rule 212 (ShowTypeOption)
-    $default   reduce using rule 43 (@3)
+    $default   reduce using rule 43 ($@3)
 
     TMIorQ   go to state 147
-    @3       go to state 49
+    $@3      go to state 49
     HelpOrQ  go to state 50
 
 
@@ -1591,10 +1591,10 @@ state 95
     T_HELP      shift, and go to state 9
     TAV_IP      shift, and go to state 148
 
-    $default  reduce using rule 109 (@10)
+    $default  reduce using rule 109 ($@10)
 
     RouteAddOrQ  go to state 149
-    @10          go to state 150
+    $@10         go to state 150
     HelpOrQ      go to state 151
 
 
@@ -1606,10 +1606,10 @@ state 96
     T_HELP      shift, and go to state 9
     TAV_IP      shift, and go to state 152
 
-    $default  reduce using rule 120 (@14)
+    $default  reduce using rule 120 ($@14)
 
     RouteDelOrQ  go to state 153
-    @14          go to state 154
+    $@14         go to state 154
     HelpOrQ      go to state 155
 
 
@@ -1626,10 +1626,10 @@ state 97
     T_HELP      shift, and go to state 9
 
     T_NEWLINE  reduce using rule 104 (ManipTypeIPRoute)
-    $default   reduce using rule 43 (@3)
+    $default   reduce using rule 43 ($@3)
 
     TMIorQ   go to state 158
-    @3       go to state 49
+    $@3      go to state 49
     HelpOrQ  go to state 50
 
 
@@ -1650,7 +1650,7 @@ state 99
 state 100
 
    87 ManipTypeIPInterface: TAV_STR . WrongOrQ
-   89                     | TAV_STR . TAV_IP @9 error
+   89                     | TAV_STR . TAV_IP $@9 error
    90                     | TAV_STR . TAV_IP TAV_IP
    91                     | TAV_STR . TAV_IP TAV_IP TMIorQ
    92                     | TAV_STR . T_UP
@@ -1664,10 +1664,10 @@ state 100
     T_HELP      shift, and go to state 9
     TAV_IP      shift, and go to state 161
 
-    $default  reduce using rule 46 (@4)
+    $default  reduce using rule 46 ($@4)
 
     WrongOrQ  go to state 162
-    @4        go to state 74
+    $@4       go to state 74
     HelpOrQ   go to state 76
 
 
@@ -1680,7 +1680,7 @@ state 101
 
 state 102
 
-   86 ManipTypeIPInterface: @8 . error
+   86 ManipTypeIPInterface: $@8 . error
 
     error  shift, and go to state 163
 
@@ -1700,10 +1700,10 @@ state 104
     T_HELP      shift, and go to state 9
     TAV_IP      shift, and go to state 164
 
-    $default  reduce using rule 73 (@5)
+    $default  reduce using rule 73 ($@5)
 
     AddTransOrQ  go to state 165
-    @5           go to state 166
+    $@5          go to state 166
     HelpOrQ      go to state 167
 
 
@@ -1715,10 +1715,10 @@ state 105
     T_HELP      shift, and go to state 9
     TAV_IP      shift, and go to state 168
 
-    $default  reduce using rule 80 (@7)
+    $default  reduce using rule 80 ($@7)
 
     DelTransOrQ  go to state 169
-    @7           go to state 170
+    $@7          go to state 170
     HelpOrQ      go to state 171
 
 
@@ -1737,10 +1737,10 @@ state 106
     T_HELP      shift, and go to state 9
 
     T_NEWLINE  reduce using rule 66 (ManipTypeIPARP)
-    $default   reduce using rule 43 (@3)
+    $default   reduce using rule 43 ($@3)
 
     TMIorQ   go to state 174
-    @3       go to state 49
+    $@3      go to state 49
     HelpOrQ  go to state 50
 
 
@@ -1767,10 +1767,10 @@ state 109
     T_HELP      shift, and go to state 9
 
     T_NEWLINE  reduce using rule 97 (ManipTypeIPOSPF)
-    $default   reduce using rule 43 (@3)
+    $default   reduce using rule 43 ($@3)
 
     TMIorQ   go to state 175
-    @3       go to state 49
+    $@3      go to state 49
     HelpOrQ  go to state 50
 
 
@@ -1783,10 +1783,10 @@ state 110
     T_HELP      shift, and go to state 9
 
     T_NEWLINE  reduce using rule 99 (ManipTypeIPOSPF)
-    $default   reduce using rule 43 (@3)
+    $default   reduce using rule 43 ($@3)
 
     TMIorQ   go to state 176
-    @3       go to state 49
+    $@3      go to state 49
     HelpOrQ  go to state 50
 
 
@@ -1821,10 +1821,10 @@ state 114
     T_HELP      shift, and go to state 9
 
     T_NEWLINE  reduce using rule 136 (ActionPing)
-    $default   reduce using rule 43 (@3)
+    $default   reduce using rule 43 ($@3)
 
     TMIorQ   go to state 178
-    @3       go to state 49
+    $@3      go to state 49
     HelpOrQ  go to state 50
 
 
@@ -1837,7 +1837,7 @@ state 115
 
 state 116
 
-  134 ActionPing: @16 error .
+  134 ActionPing: $@16 error .
 
     $default  reduce using rule 134 (ActionPing)
 
@@ -1851,14 +1851,14 @@ state 117
 
 state 118
 
-  143 ActionTrace: @17 error .
+  143 ActionTrace: $@17 error .
 
     $default  reduce using rule 143 (ActionTrace)
 
 
 state 119
 
-   44 TMIorQ: @3 error .
+   44 TMIorQ: $@3 error .
 
     $default  reduce using rule 44 (TMIorQ)
 
@@ -1933,7 +1933,7 @@ state 124
 
 state 125
 
-  155 ActionHelp: HelpOrQ T_ALL @18 . error
+  155 ActionHelp: HelpOrQ T_ALL $@18 . error
 
     error  shift, and go to state 193
 
@@ -2000,7 +2000,7 @@ state 130
 
 state 131
 
-  202 ActionHelp: HelpOrQ @19 error .
+  202 ActionHelp: HelpOrQ $@19 error .
 
     $default  reduce using rule 202 (ActionHelp)
 
@@ -2042,7 +2042,7 @@ state 136
 
 state 137
 
-   47 WrongOrQ: @4 error .
+   47 WrongOrQ: $@4 error .
 
     $default  reduce using rule 47 (WrongOrQ)
 
@@ -2119,17 +2119,17 @@ state 147
 
 state 148
 
-  112 RouteAddOrQ: TAV_IP . @11 error
-  114            | TAV_IP . TAV_IP @12 error
-  116            | TAV_IP . TAV_IP TAV_IP @13 error
+  112 RouteAddOrQ: TAV_IP . $@11 error
+  114            | TAV_IP . TAV_IP $@12 error
+  116            | TAV_IP . TAV_IP TAV_IP $@13 error
   117            | TAV_IP . TAV_IP TAV_IP TAV_STR
   118            | TAV_IP . TAV_IP TAV_IP TAV_STR TMIorQ
 
     TAV_IP  shift, and go to state 204
 
-    $default  reduce using rule 111 (@11)
+    $default  reduce using rule 111 ($@11)
 
-    @11  go to state 205
+    $@11  go to state 205
 
 
 state 149
@@ -2141,7 +2141,7 @@ state 149
 
 state 150
 
-  110 RouteAddOrQ: @10 . error
+  110 RouteAddOrQ: $@10 . error
 
     error  shift, and go to state 206
 
@@ -2155,15 +2155,15 @@ state 151
 
 state 152
 
-  123 RouteDelOrQ: TAV_IP . @15 error
+  123 RouteDelOrQ: TAV_IP . $@15 error
   124            | TAV_IP . TAV_IP
   125            | TAV_IP . TAV_IP TMIorQ
 
     TAV_IP  shift, and go to state 207
 
-    $default  reduce using rule 122 (@15)
+    $default  reduce using rule 122 ($@15)
 
-    @15  go to state 208
+    $@15  go to state 208
 
 
 state 153
@@ -2175,7 +2175,7 @@ state 153
 
 state 154
 
-  121 RouteDelOrQ: @14 . error
+  121 RouteDelOrQ: $@14 . error
 
     error  shift, and go to state 209
 
@@ -2217,10 +2217,10 @@ state 159
     T_HELP      shift, and go to state 9
 
     T_NEWLINE  reduce using rule 92 (ManipTypeIPInterface)
-    $default   reduce using rule 43 (@3)
+    $default   reduce using rule 43 ($@3)
 
     TMIorQ   go to state 210
-    @3       go to state 49
+    $@3      go to state 49
     HelpOrQ  go to state 50
 
 
@@ -2233,24 +2233,24 @@ state 160
     T_HELP      shift, and go to state 9
 
     T_NEWLINE  reduce using rule 94 (ManipTypeIPInterface)
-    $default   reduce using rule 43 (@3)
+    $default   reduce using rule 43 ($@3)
 
     TMIorQ   go to state 211
-    @3       go to state 49
+    $@3      go to state 49
     HelpOrQ  go to state 50
 
 
 state 161
 
-   89 ManipTypeIPInterface: TAV_STR TAV_IP . @9 error
+   89 ManipTypeIPInterface: TAV_STR TAV_IP . $@9 error
    90                     | TAV_STR TAV_IP . TAV_IP
    91                     | TAV_STR TAV_IP . TAV_IP TMIorQ
 
     TAV_IP  shift, and go to state 212
 
-    $default  reduce using rule 88 (@9)
+    $default  reduce using rule 88 ($@9)
 
-    @9  go to state 213
+    $@9  go to state 213
 
 
 state 162
@@ -2262,22 +2262,22 @@ state 162
 
 state 163
 
-   86 ManipTypeIPInterface: @8 error .
+   86 ManipTypeIPInterface: $@8 error .
 
     $default  reduce using rule 86 (ManipTypeIPInterface)
 
 
 state 164
 
-   76 AddTransOrQ: TAV_IP . @6 error
+   76 AddTransOrQ: TAV_IP . $@6 error
    77            | TAV_IP . TAV_MAC
    78            | TAV_IP . TAV_MAC TMIorQ
 
     TAV_MAC  shift, and go to state 214
 
-    $default  reduce using rule 75 (@6)
+    $default  reduce using rule 75 ($@6)
 
-    @6  go to state 215
+    $@6  go to state 215
 
 
 state 165
@@ -2289,7 +2289,7 @@ state 165
 
 state 166
 
-   74 AddTransOrQ: @5 . error
+   74 AddTransOrQ: $@5 . error
 
     error  shift, and go to state 216
 
@@ -2310,10 +2310,10 @@ state 168
     T_HELP      shift, and go to state 9
 
     T_NEWLINE  reduce using rule 82 (DelTransOrQ)
-    $default   reduce using rule 43 (@3)
+    $default   reduce using rule 43 ($@3)
 
     TMIorQ   go to state 217
-    @3       go to state 49
+    $@3      go to state 49
     HelpOrQ  go to state 50
 
 
@@ -2326,7 +2326,7 @@ state 169
 
 state 170
 
-   81 DelTransOrQ: @7 . error
+   81 DelTransOrQ: $@7 . error
 
     error  shift, and go to state 218
 
@@ -2347,10 +2347,10 @@ state 172
     T_HELP      shift, and go to state 9
 
     T_NEWLINE  reduce using rule 70 (ManipTypeIPARP)
-    $default   reduce using rule 43 (@3)
+    $default   reduce using rule 43 ($@3)
 
     TMIorQ   go to state 219
-    @3       go to state 49
+    $@3      go to state 49
     HelpOrQ  go to state 50
 
 
@@ -2363,10 +2363,10 @@ state 173
     T_HELP      shift, and go to state 9
 
     T_NEWLINE  reduce using rule 68 (ManipTypeIPARP)
-    $default   reduce using rule 43 (@3)
+    $default   reduce using rule 43 ($@3)
 
     TMIorQ   go to state 220
-    @3       go to state 49
+    $@3      go to state 49
     HelpOrQ  go to state 50
 
 
@@ -2400,10 +2400,10 @@ state 177
     T_HELP      shift, and go to state 9
 
     T_NEWLINE  reduce using rule 138 (ActionPing)
-    $default   reduce using rule 43 (@3)
+    $default   reduce using rule 43 ($@3)
 
     TMIorQ   go to state 221
-    @3       go to state 49
+    $@3      go to state 49
     HelpOrQ  go to state 50
 
 
@@ -2514,7 +2514,7 @@ state 192
 
 state 193
 
-  155 ActionHelp: HelpOrQ T_ALL @18 error .
+  155 ActionHelp: HelpOrQ T_ALL $@18 error .
 
     $default  reduce using rule 155 (ActionHelp)
 
@@ -2596,28 +2596,28 @@ state 203
 
 state 204
 
-  114 RouteAddOrQ: TAV_IP TAV_IP . @12 error
-  116            | TAV_IP TAV_IP . TAV_IP @13 error
+  114 RouteAddOrQ: TAV_IP TAV_IP . $@12 error
+  116            | TAV_IP TAV_IP . TAV_IP $@13 error
   117            | TAV_IP TAV_IP . TAV_IP TAV_STR
   118            | TAV_IP TAV_IP . TAV_IP TAV_STR TMIorQ
 
     TAV_IP  shift, and go to state 224
 
-    $default  reduce using rule 113 (@12)
+    $default  reduce using rule 113 ($@12)
 
-    @12  go to state 225
+    $@12  go to state 225
 
 
 state 205
 
-  112 RouteAddOrQ: TAV_IP @11 . error
+  112 RouteAddOrQ: TAV_IP $@11 . error
 
     error  shift, and go to state 226
 
 
 state 206
 
-  110 RouteAddOrQ: @10 error .
+  110 RouteAddOrQ: $@10 error .
 
     $default  reduce using rule 110 (RouteAddOrQ)
 
@@ -2631,23 +2631,23 @@ state 207
     T_HELP      shift, and go to state 9
 
     T_NEWLINE  reduce using rule 124 (RouteDelOrQ)
-    $default   reduce using rule 43 (@3)
+    $default   reduce using rule 43 ($@3)
 
     TMIorQ   go to state 227
-    @3       go to state 49
+    $@3      go to state 49
     HelpOrQ  go to state 50
 
 
 state 208
 
-  123 RouteDelOrQ: TAV_IP @15 . error
+  123 RouteDelOrQ: TAV_IP $@15 . error
 
     error  shift, and go to state 228
 
 
 state 209
 
-  121 RouteDelOrQ: @14 error .
+  121 RouteDelOrQ: $@14 error .
 
     $default  reduce using rule 121 (RouteDelOrQ)
 
@@ -2675,16 +2675,16 @@ state 212
     T_HELP      shift, and go to state 9
 
     T_NEWLINE  reduce using rule 90 (ManipTypeIPInterface)
-    $default   reduce using rule 43 (@3)
+    $default   reduce using rule 43 ($@3)
 
     TMIorQ   go to state 229
-    @3       go to state 49
+    $@3      go to state 49
     HelpOrQ  go to state 50
 
 
 state 213
 
-   89 ManipTypeIPInterface: TAV_STR TAV_IP @9 . error
+   89 ManipTypeIPInterface: TAV_STR TAV_IP $@9 . error
 
     error  shift, and go to state 230
 
@@ -2698,23 +2698,23 @@ state 214
     T_HELP      shift, and go to state 9
 
     T_NEWLINE  reduce using rule 77 (AddTransOrQ)
-    $default   reduce using rule 43 (@3)
+    $default   reduce using rule 43 ($@3)
 
     TMIorQ   go to state 231
-    @3       go to state 49
+    $@3      go to state 49
     HelpOrQ  go to state 50
 
 
 state 215
 
-   76 AddTransOrQ: TAV_IP @6 . error
+   76 AddTransOrQ: TAV_IP $@6 . error
 
     error  shift, and go to state 232
 
 
 state 216
 
-   74 AddTransOrQ: @5 error .
+   74 AddTransOrQ: $@5 error .
 
     $default  reduce using rule 74 (AddTransOrQ)
 
@@ -2728,7 +2728,7 @@ state 217
 
 state 218
 
-   81 DelTransOrQ: @7 error .
+   81 DelTransOrQ: $@7 error .
 
     $default  reduce using rule 81 (DelTransOrQ)
 
@@ -2770,27 +2770,27 @@ state 223
 
 state 224
 
-  116 RouteAddOrQ: TAV_IP TAV_IP TAV_IP . @13 error
+  116 RouteAddOrQ: TAV_IP TAV_IP TAV_IP . $@13 error
   117            | TAV_IP TAV_IP TAV_IP . TAV_STR
   118            | TAV_IP TAV_IP TAV_IP . TAV_STR TMIorQ
 
     TAV_STR  shift, and go to state 233
 
-    $default  reduce using rule 115 (@13)
+    $default  reduce using rule 115 ($@13)
 
-    @13  go to state 234
+    $@13  go to state 234
 
 
 state 225
 
-  114 RouteAddOrQ: TAV_IP TAV_IP @12 . error
+  114 RouteAddOrQ: TAV_IP TAV_IP $@12 . error
 
     error  shift, and go to state 235
 
 
 state 226
 
-  112 RouteAddOrQ: TAV_IP @11 error .
+  112 RouteAddOrQ: TAV_IP $@11 error .
 
     $default  reduce using rule 112 (RouteAddOrQ)
 
@@ -2804,7 +2804,7 @@ state 227
 
 state 228
 
-  123 RouteDelOrQ: TAV_IP @15 error .
+  123 RouteDelOrQ: TAV_IP $@15 error .
 
     $default  reduce using rule 123 (RouteDelOrQ)
 
@@ -2818,7 +2818,7 @@ state 229
 
 state 230
 
-   89 ManipTypeIPInterface: TAV_STR TAV_IP @9 error .
+   89 ManipTypeIPInterface: TAV_STR TAV_IP $@9 error .
 
     $default  reduce using rule 89 (ManipTypeIPInterface)
 
@@ -2832,7 +2832,7 @@ state 231
 
 state 232
 
-   76 AddTransOrQ: TAV_IP @6 error .
+   76 AddTransOrQ: TAV_IP $@6 error .
 
     $default  reduce using rule 76 (AddTransOrQ)
 
@@ -2846,23 +2846,23 @@ state 233
     T_HELP      shift, and go to state 9
 
     T_NEWLINE  reduce using rule 117 (RouteAddOrQ)
-    $default   reduce using rule 43 (@3)
+    $default   reduce using rule 43 ($@3)
 
     TMIorQ   go to state 236
-    @3       go to state 49
+    $@3      go to state 49
     HelpOrQ  go to state 50
 
 
 state 234
 
-  116 RouteAddOrQ: TAV_IP TAV_IP TAV_IP @13 . error
+  116 RouteAddOrQ: TAV_IP TAV_IP TAV_IP $@13 . error
 
     error  shift, and go to state 237
 
 
 state 235
 
-  114 RouteAddOrQ: TAV_IP TAV_IP @12 error .
+  114 RouteAddOrQ: TAV_IP TAV_IP $@12 error .
 
     $default  reduce using rule 114 (RouteAddOrQ)
 
@@ -2876,6 +2876,6 @@ state 236
 
 state 237
 
-  116 RouteAddOrQ: TAV_IP TAV_IP TAV_IP @13 error .
+  116 RouteAddOrQ: TAV_IP TAV_IP TAV_IP $@13 error .
 
     $default  reduce using rule 116 (RouteAddOrQ)

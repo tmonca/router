@@ -11,6 +11,7 @@
 #include "sr_router.h"
 #include "sr_protocol.h"
 #include "sr_help.h"
+#include "sr_if.h"
 
 
 //struct for arp entry linked list
