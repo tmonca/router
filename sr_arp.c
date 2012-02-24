@@ -111,14 +111,26 @@ uint8_t* find_mac_in_cache(struct sr_instance* sr, uint32_t IP){
  rturns the count
  */
 
-int get_cache_length(struct arp_cache_list* head){
+int get_cache_length(struct sr_instance* sr, unsigned int type){
+  assert(sr);
+  struct sr_router* sub = (struct sr_router*)sr_get_subsystem(sr)
+  assert(sub);
   int length;
-  struct arp_cache_list* current = head->next;
-  while(current != NULL){
-    length++;
+  if(type == 1){  /* dynamic cache */
+     struct arp_cache_list* current = sub->arp_cache;
+     while(current != NULL){
+        length++;
+        current = current->next;
+     }
+  }
+  else { /* assume it must be static*/
+     struct arp_cache_list* current = sub->arp_cache_static;
+     while(current != NULL){
+        length++;
+        current = current->next;
+     }
   }
   return length;
-  
 }
 
 /* remove all entries with this IP address
@@ -160,7 +172,6 @@ int process_arp(struct sr_instance* sr, char* intf, struct sr_arphdr* arp){
    assert(sr);
    assert(intf);
    assert(arp);
-   struct sr_router* sub = (struct sr_router*)sr_get_subsystem(sr);
 
    struct sr_vns_if* interface = sr_get_interface(sr, intf);
    //check this is a well-formed ARP packet
@@ -278,10 +289,10 @@ int arp_lookup(struct sr_instance * sr, char* interface, uint8_t* payload, uint3
    
    struct sr_ethernet_hdr* ethHdr = (struct sr_ethernet_hdr*) malloc_or_die(sizeof(struct sr_ethernet_hdr));
    struct sr_vns_if* intf = sr_get_interface(sr, interface);
-   struct sr_router* sub = (struct sr_router*)sr_get_subsystem(sr);
-   int i, rtn;
+   //struct sr_router* sub = (struct sr_router*)sr_get_subsystem(sr);
+   int rtn;
 
-   uint8_t src[6];
+   //uint8_t src[6];
    mac_copy(intf->addr, ethHdr->ether_shost);
 #if 0   
    printf("********* at %s    Payload is 0x ", __func__);
@@ -386,6 +397,36 @@ int send_arp_request(struct sr_instance * sr, char* iface, uint8_t* payload, uin
 
 
 //which in turn means we need a structure to store the pending requests
+
+
+void arp_cache_cleanup(struct sr_instance *){
+   
+   struct sr_router* sub = (struct sr_router*)sr_get_subsystem(sr);   /*garbage collect  */
+   while (1) {
+      struct timespec delay, remains;
+      delay.tv_sec = ARP_GC_INTERVAL_S;
+      delay.tv_nsec = 0; 
+      int done = 1; 
+      int i, count;
+      /* so what do we need to do to garbage collect?*/
+      
+      done = nanosleep(&delay, &remains);
+      if(done == 0) {
+         pthread_mutex_lock(sub->arp_cache->lock);
+         printf("@ * GARBAGE COLLECTION * @\n");
+         count = get_cache_length(sr, 1);
+         for(i = 0; i< count; i++){
+            //go through each entry and check if timed out
+            
+            //if timed out, remove the entry and hook "prev"->next into this->next
+         }
+         pthread_mutex_unlock(sub->arp_cache->lock);
+         done = 1;  
+      }
+      else
+         printf("******************\n");
+   }
+}
 
 
 

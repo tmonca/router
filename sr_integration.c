@@ -23,6 +23,7 @@
 #include "sr_arp.h"
 #include "sr_rt.h"
 #include "sr_handler.h"
+#include "sr_protocol.h"
 
 #ifdef _CPUMODE_
 #include "sr_cpu_extension_nf2.h"
@@ -119,60 +120,63 @@ void sr_integ_input(struct sr_instance* sr,
    
    uint16_t tmpType;
    tmpType = ntohs(Frame->header->ether_type);
-   
-   //1 Use Ethernet header to update ARP regardless of pkt type
+   // We will use Ethernet header to update ARP regardless of pkt type (via IP)
    
    uint8_t* srcMAC = (uint8_t*)malloc_or_die(6);
    srcMAC = Frame->header->ether_shost;
    
-   
-   /* Now we have to check the type and handle accordingly */
-   if(tmpType == ETHERTYPE_ARP){
-      struct sr_arphdr* arp;
-      arp = extract_arp_header(Frame->payload);
-      printf("******************     ARP PACKET    **************\n");
-      if( process_arp(sr, interface, arp)){
-         printf("*******   ******    we processed the ARP  *******   *******\n");
-      }
-   }
-   else if (tmpType == ETHERTYPE_IP){
-      printf(" !!!!!!!!!!!!!!!!       passing %d - 14 bytes\n", len);
-      struct sr_ip_pkt* Pkt = (struct sr_ip_pkt*) malloc_or_die(len - 14);
-      Pkt = read_ip_pkt(Frame->payload, (len-14));
-      
-      printf("***@***@***@***@***     IP PACKET    @***@***@***@***\n");
-      check = handle_ip_pkt(sr, Pkt, interface, (len-14), srcMAC);
-      
-      switch (check) {
-         case 3: 
-            printf("******************   This isn't my packet so I will now call forwarding code\n");
-            break;
-         case 2:
-            printf("******************   ICMP packet processed\n");
-            break;
-         case 1:
-            printf("******************   This packet belongs to me so I will now process it\n");
-            break;
-         case -1:
-            printf("@@@@@@@@@@@@@@@@   This packet has expired so I send back an ICMP\n");
-            break;
-         case -2:
-            printf("@@@@@@@@@@@@@@@@   This packet failed checksum check...\n");
-            break;
-         default:
-            printf("@@@******@@@@********   something else happened\n");
-            break;
-      }
-      
-   } 
-   else{
-      printf("\n@@@@@@@@@@@@@@@@@@@@@@@  UNRECOGNISED PACKET TYPE %hu\n", tmpType);
-   }
-  // printf("@******@*******   %s   leaving this function\n", __func__);
-   
-   return;
+   //go for a switch statement for tmpType
    
 
+uint8_t* Pkt = packet + 14; //can we really pass the IP part of the packet in this way?
+struct sr_arphdr* arp;   
+   
+   switch(tmpType){
+      case ETHERTYPE_ARP:
+         
+         arp = extract_arp_header(Frame->payload);
+         printf("******************     ARP PACKET    **************\n");
+         if( process_arp(sr, interface, arp)){
+            printf("*******   ******    we processed the ARP  *******   *******\n");
+         }
+         break;
+         
+      case ETHERTYPE_IP:
+         
+         printf("***@***@***@***@***     IP PACKET    @***@***@***@***\n");
+         check = handle_ip_pkt(sr, Pkt, interface, (len-14), srcMAC);
+      
+         switch (check) {
+            case 3: 
+               printf("******************   This isn't my packet so I will now call forwarding code\n");
+               break;
+            case 2:
+               printf("******************   ICMP packet processed\n");
+               break;
+            case 1:
+               printf("******************   This packet belongs to me so I processed it\n");
+               break;
+            case -1:
+               printf("@@@@@@@@@@@@@@@@   This packet has expired so I sent back an ICMP\n");
+               break;
+            case -2:
+               printf("@@@@@@@@@@@@@@@@   This packet failed checksum check...\n");
+               break;
+            case -3:
+               printf("@@@@@@@@@@@@@@@@   This packet had IP options ...\n");
+               break;
+            default:
+               printf("@@@******@@@@********   something else happened\n");
+               break;
+         }
+         break;
+         
+      default:
+         printf("\n@@@@@@@@@@@@@@@@@@@@@@@  UNRECOGNISED ETHERNET TYPE %hu\n", tmpType);
+   }
+
+   return;
+   
 } /* -- sr_integ_input -- */
 
 /*-----------------------------------------------------------------------------

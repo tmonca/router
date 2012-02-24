@@ -65,7 +65,10 @@ struct sr_ip_pkt* read_ip_pkt(uint8_t* raw, unsigned int len){
  * A method for dealing with IP packets and assigning to correct place
  *---------------------------------------------------------------------*/
 
-int handle_ip_pkt(struct sr_instance* sr, struct sr_ip_pkt* Pkt, char* interface, unsigned int len, uint8_t srcMAC[]){
+int handle_ip_pkt(struct sr_instance* sr, uint8_t* Pkt, char* interface, unsigned int len, uint8_t srcMAC[]){
+   
+   //actually I have to pass in a uint8_t* packet not an sr_ip_pkt...
+   
    /*
     Extract the IP header
     Header actions:
@@ -97,44 +100,70 @@ int handle_ip_pkt(struct sr_instance* sr, struct sr_ip_pkt* Pkt, char* interface
     assert(Pkt);
     assert(sr);
     assert(interface);
-    
+
    //struct sr_router* subsystem = (struct sr_router*)sr_get_subsystem(sr);
-   
    struct sr_vns_if* myIntf = sr_get_interface(sr, interface); 
    uint32_t myIP = myIntf->ip;
-   uint32_t originIP = Pkt->header->ip_src.s_addr;
+
+   struct ip* pktHdr = (struct ip*)Pkt;
+   uint8_t* payload = (uint8_t*)malloc_or_die(len - 20);
+   uint8_t* ptr = Pkt + 20;
+   memcpy(payload, Pkt, len-20);
+   
+   uint32_t originIP = pktHdr->ip_src.s_addr;
    
    //first thing is to update ARP - no point wasiting useful information is there!
    time_t now = time(NULL);
    int checkArp; 
    checkArp = find_and_update(sr, originIP, srcMAC, now);
    
-   if(cksum((uint8_t*)Pkt->header, 20)){
+   if(cksum((uint8_t*)pktHdr, 20)){
       printf("@@@@@@@@@@@@@@@@@@@@@@    CHECKSUM WAS INVALID SO WE WILL DROP THE PACKET\n");
-      return -1;
+      return -2;
    }
    
-   if(Pkt->header->ip_ttl < 2){
+   if(pktHdr->ip_len != htons(20)){
+      //means there were IP options so unerachable (host or network?)
+      uint8_t* data = (uint8_t*)malloc_or_die(28);
+      memcpy(data, Pkt, 28);
+      int tmp;
+      tmp = create_ICMP_pkt(sr, interface, originIP, 3, 1, 0, 0, data, 28);
+      return -3;
+   }
+   
+   if(pktHdr->ip_ttl < 2){
       printf("@@@@@@@@@@@@@@@@@@@@@@    TTL has expired so we will send back an ICMP\n");
+      //get the data (IP hdr + 8 bytes of packet)
+      uint8_t* data = (uint8_t*)malloc_or_die(28);
+      memcpy(data, Pkt, 28);
+      int tmp;
+      tmp = create_ICMP_pkt(sr, interface, originIP, 11, 0, 0, 0, data, 28);
       return -1;
    }
    
-   if((uint32_t)Pkt->header->ip_dst.s_addr == myIP){
+   if((uint32_t)pktHdr->ip_dst.s_addr == myIP){
       
       printf("This is my packet so I will process it\n");
-      if(Pkt->header->ip_p == IPPROTO_ICMP){
-         printf("\nThis is an IP ICMP packet of length %d\n", len);
-         int datalen = len - sizeof(struct ip);
-         printf("After removing the IP header we are left with %d bytes\n", datalen);
-         uint8_t* ICMP = (uint8_t*) malloc_or_die(datalen);
-         //ICMP = array_cpy(Pkt->payload, datalen);
-         memcpy(ICMP, Pkt->payload, datalen);
-         int tmp;
-         tmp = process_ICMP_pkt(sr, interface, originIP, ICMP, datalen); 
-         return tmp;
-      }
       
-      return 1;
+      switch(pktHdr->ip_p) {
+         case IPPROTO_ICMP:
+            printf("\nThis is an IP ICMP packet of length %d\n", len);
+            int datalen = len - sizeof(struct ip);
+            printf("After removing the IP header we are left with %d bytes\n", datalen);
+            uint8_t* ICMP = (uint8_t*) malloc_or_die(datalen);
+            //ICMP = array_cpy(Pkt->payload, datalen);
+            memcpy(ICMP, payload, datalen);
+            int tmp;
+            tmp = process_ICMP_pkt(sr, interface, originIP, ICMP, datalen); 
+            return tmp;
+
+         case IPPROTO_TCP:
+            printf("TCP packet sent up the stack\n");
+            sr_transport_input(Pkt);
+            return 1;
+         default:
+            return 0;
+      }
    }
    else{
       printf("**********  Not my packet, so I will forward it\n");
@@ -205,7 +234,8 @@ int process_ICMP_pkt(struct sr_instance* sr, char* interface, uint32_t srcIP, ui
  * returns 1 on success, 2 on waiting for ARP, 0 on fail, -1 on interface error
  *---------------------------------------------------------------------*/
 
-int create_ICMP_pkt(struct sr_instance* sr, char* interface, uint32_t dstIP, uint8_t type, uint8_t code, uint16_t field1, uint16_t field2, uint8_t* data,unsigned int datalen){
+int create_ICMP_pkt(struct sr_instance* sr, char* interface, uint32_t dstIP, uint8_t type, uint8_t code, uint16_t field1, uint16_t field2, uint8_t* data, unsigned int datalen){
+
    assert(data);
    assert(sr);
    assert(interface);
