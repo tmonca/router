@@ -51,7 +51,7 @@ liblwtcp.a : $(LWTCP_OBJS)
 #------------------------------------------------------------------------------
 SR_BASE_SRCS = sr_base.c sr_dumper.c sr_integration.c sr_lwtcp_glue.c \
                sr_vns.c sr_cpu_extension_nf2.c real_socket_helper.c sha1.c \
-               sr_arp.c sr_handler.c sr_if.c sr_help.c
+               sr_arp.c sr_handler.c sr_if.c sr_lpm.c sr_help.c sr_rt.c
                
 
 SR_BASE_OBJS = $(patsubst %.c,%.o,$(SR_BASE_SRCS))

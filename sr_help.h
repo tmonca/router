@@ -7,6 +7,8 @@
 #include <assert.h>
 #include "sr_protocol.h"
 #include <time.h>
+#include "sr_base_internal.h"
+#include "sr_router.h"
 
 
 
@@ -26,6 +28,9 @@ time_t now();
 
 void print_icmp_pkt(struct sr_icmp_hdr*);
 
+void print_ip(uint32_t);
+
+int check_my_interface(struct sr_instance*, uint32_t);
 
 #endif
 

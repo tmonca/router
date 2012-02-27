@@ -13,6 +13,7 @@
 #include "sr_arp.h"
 #include "sr_help.h"
 #include "sr_integration.h"
+#include "sr_lpm.h"
 
 struct send_list
 {

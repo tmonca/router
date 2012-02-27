@@ -87,28 +87,29 @@ int sr_load_rt(struct sr_instance* sr,const char* filename)
 void sr_add_rt_entry(struct sr_instance* sr, struct in_addr dest,
         struct in_addr gw, struct in_addr mask,char* if_name)
 {
-    struct sr_rt* rt_walker = 0;
-
+      struct sr_router* subs = (struct sr_router*)sr_get_subsystem(sr);
+     struct sr_rt* rt_walker = 0;
+   
     /* -- REQUIRES -- */
     assert(if_name);
     assert(sr);
 
     /* -- empty list special case -- */
-    if(sr->routing_table == 0)
+    if(subs->routing_table == 0)
     {
-        sr->routing_table = (struct sr_rt*)malloc(sizeof(struct sr_rt));
-        assert(sr->routing_table);
-        sr->routing_table->next = 0;
-        sr->routing_table->dest = dest;
-        sr->routing_table->gw   = gw;
-        sr->routing_table->mask = mask;
-        strncpy(sr->routing_table->interface,if_name,sr_IFACE_NAMELEN);
+        subs->routing_table = (struct sr_rt*)malloc(sizeof(struct sr_rt));
+        assert(subs->routing_table);
+        subs->routing_table->next = 0;
+        subs->routing_table->dest = dest;
+        subs->routing_table->gw   = gw;
+        subs->routing_table->mask = mask;
+        strncpy(subs->routing_table->interface,if_name,sr_IFACE_NAMELEN);
 
         return;
     }
 
     /* -- find the end of the list -- */
-    rt_walker = sr->routing_table;
+    rt_walker = subs->routing_table;
     while(rt_walker->next)
     {rt_walker = rt_walker->next; }
 
@@ -132,8 +133,9 @@ void sr_add_rt_entry(struct sr_instance* sr, struct in_addr dest,
 void sr_print_routing_table(struct sr_instance* sr)
 {
     struct sr_rt* rt_walker = 0;
+   struct sr_router* subs = (struct sr_router*)sr_get_subsystem(sr);
 
-    if(sr->routing_table == 0)
+    if(subs->routing_table == 0)
     {
         printf(" *warning* Routing table empty \n");
         return;
@@ -141,7 +143,7 @@ void sr_print_routing_table(struct sr_instance* sr)
 
     printf("Destination\tGateway\t\tMask\tIface\n");
 
-    rt_walker = sr->routing_table;
+    rt_walker = subs->routing_table;
     
     sr_print_routing_entry(rt_walker);
     while(rt_walker->next)

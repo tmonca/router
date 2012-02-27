@@ -24,6 +24,8 @@
 #include "sr_rt.h"
 #include "sr_handler.h"
 #include "sr_protocol.h"
+#include "sr_help.h"
+#include "sr_lpm.h"
 
 #ifdef _CPUMODE_
 #include "sr_cpu_extension_nf2.h"
@@ -57,8 +59,10 @@ void sr_integ_init(struct sr_instance* sr)
     subsystem->sr = sr;   // hopefully this isn't a circular definition
     
     //now create the piecces
+    if(sr_load_rt(sr, "rtable") != 0){
+       printf("@@@@@@@@@@@@@@@@@@@@@@@@    FAILED TO LOAD ROUTING TABLE\n");
+    }
     
-    subsystem->routing_table = (struct sr_rt*)malloc_or_die(sizeof(struct sr_rt));
     //subsystem->arp_cache = (struct arp_cache_list*)malloc_or_die(sizeof(struct arp_cache_list));
     subsystem->waitSend = (struct send_list*)malloc_or_die(sizeof(struct send_list));
     
@@ -109,10 +113,10 @@ void sr_integ_input(struct sr_instance* sr,
    assert(sr);
    assert(packet);
    assert(interface);
-   struct sr_router* subsystem = (struct sr_router*)sr_get_subsystem(sr);
+   //struct sr_router* subsystem = (struct sr_router*)sr_get_subsystem(sr);
    
    printf("*** -> Received packet of length %d \n",len);
-   int check, tmp;
+   int check;
    struct sr_eth_pkt* Frame = (struct sr_eth_pkt*) malloc_or_die(len);    
    Frame = read_ethernet_frame(packet, len);
    
@@ -126,18 +130,26 @@ void sr_integ_input(struct sr_instance* sr,
    srcMAC = Frame->header->ether_shost;
    
    //go for a switch statement for tmpType
-   
 
-uint8_t* Pkt = packet + 14; //can we really pass the IP part of the packet in this way?
+uint8_t* Pkt = packet + 14; 
 struct sr_arphdr* arp;   
-   
+int test, sent;   
    switch(tmpType){
       case ETHERTYPE_ARP:
-         
-         arp = extract_arp_header(Frame->payload);
+
          printf("******************     ARP PACKET    **************\n");
-         if( process_arp(sr, interface, arp)){
+         arp = extract_arp_header(Frame->payload);
+         test = process_arp(sr, interface, arp);
+         if(arp >= 1){
             printf("*******   ******    we processed the ARP  *******   *******\n");
+         }
+         else if(arp == -2){
+            uint32_t IP = ((struct ip*)Pkt)->ip_dst.s_addr;
+            printf("@@   ******   @@   *****    CHECK THIS MAKES SENSE: ");
+            print_ip(IP);
+            char* intf = longest_prefix(sr, IP);
+            sent = sr_integ_low_level_output(sr, packet, len, intf);
+            printf("Sending ARP on interface %s, success: %i\n", intf, sent);
          }
          break;
          
@@ -149,6 +161,13 @@ struct sr_arphdr* arp;
          switch (check) {
             case 3: 
                printf("******************   This isn't my packet so I will now call forwarding code\n");
+               uint32_t IP = ((struct ip*)Pkt)->ip_dst.s_addr;
+               //printf("@@   ******   @@   *****    CHECK THIS MAKES SENSE: ");
+               print_ip(IP);
+               char* intf = longest_prefix(sr, IP);
+               
+               sent = sr_integ_low_level_output(sr, packet, len, intf);
+               printf("Sending out on interface %s, success: %i\n", intf, sent);
                break;
             case 2:
                printf("******************   ICMP packet processed\n");

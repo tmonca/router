@@ -19,6 +19,11 @@
 #include <netinet/in.h>
 #include "sr_base_internal.h"
 
+#ifndef sr_IFACE_NAMELEN
+#define sr_IFACE_NAMELEN 32
+#endif
+
+
 /* ----------------------------------------------------------------------------
  * struct sr_rt
  *

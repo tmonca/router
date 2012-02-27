@@ -113,7 +113,7 @@ uint8_t* find_mac_in_cache(struct sr_instance* sr, uint32_t IP){
 
 int get_cache_length(struct sr_instance* sr, unsigned int type){
   assert(sr);
-  struct sr_router* sub = (struct sr_router*)sr_get_subsystem(sr)
+  struct sr_router* sub = (struct sr_router*)sr_get_subsystem(sr);
   assert(sub);
   int length;
   if(type == 1){  /* dynamic cache */
@@ -208,7 +208,7 @@ int process_arp(struct sr_instance* sr, char* intf, struct sr_arphdr* arp){
             return 2;
          }
          else{
-            return -1;
+            return -2;
          }
       }
       else if(arp->ar_op == ARP_REPLY){
@@ -221,6 +221,7 @@ int process_arp(struct sr_instance* sr, char* intf, struct sr_arphdr* arp){
    }
    //what do we do if this wasn't our packet?
    else{
+      
       return -1;
    }
    return -1;
@@ -398,7 +399,7 @@ int send_arp_request(struct sr_instance * sr, char* iface, uint8_t* payload, uin
 
 //which in turn means we need a structure to store the pending requests
 
-
+#if 0
 void arp_cache_cleanup(struct sr_instance *){
    
    struct sr_router* sub = (struct sr_router*)sr_get_subsystem(sr);   /*garbage collect  */
@@ -428,5 +429,5 @@ void arp_cache_cleanup(struct sr_instance *){
    }
 }
 
-
+#endif
 

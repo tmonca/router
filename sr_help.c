@@ -153,4 +153,63 @@ void print_icmp_pkt(struct sr_icmp_hdr* packet){
    
    printf("\n\n");
 }
- 
+
+void print_ip(uint32_t IP){
+   uint8_t tmp;
+   uint32_t masked;
+   printf("IP address ");
+   
+   /* byte 1*/
+   masked = IP;
+   masked &= 0xff000000;
+   masked = masked>>24;
+   tmp=(uint8_t)masked;
+   printf("%hhu.", tmp);
+   
+   /* byte 2*/
+   masked = IP;
+   masked &= 0x00ff0000;
+   masked = masked>>16;
+   tmp=(uint8_t)masked;
+   printf("%hhu.", tmp);
+
+   /* byte 3*/
+   masked = IP;
+   masked &= 0x0000ff00;
+   masked = masked>>8;
+   tmp=(uint8_t)masked;
+   printf("%hhu.", tmp);
+   
+   /* byte 4*/
+   masked = IP;
+   masked &= 0x000000ff;
+   tmp=(uint8_t)masked;
+   printf("%hhu.", tmp);
+   
+   printf(" \n");
+   return;
+   
+}
+
+/* ***************************************
+
+Checks to see if IP is one of my interfaces. 
+returns 1 if yes, 0 if no
+
+**************************************** */
+
+int check_my_interface(struct sr_instance* sr, uint32_t IP){
+   assert(sr);
+   struct sr_router* subs = (struct sr_router*)sr_get_subsystem(sr);
+   struct sr_vns_if* intf_walker = subs->if_list;
+   while(intf_walker != NULL){
+      if(intf_walker->ip == IP){
+         //this is our intf)
+         return 1;
+      }
+      intf_walker = intf_walker->next;
+   }
+   return 0;
+}
+
+

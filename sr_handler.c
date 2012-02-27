@@ -108,7 +108,7 @@ int handle_ip_pkt(struct sr_instance* sr, uint8_t* Pkt, char* interface, unsigne
    struct ip* pktHdr = (struct ip*)Pkt;
    uint8_t* payload = (uint8_t*)malloc_or_die(len - 20);
    uint8_t* ptr = Pkt + 20;
-   memcpy(payload, Pkt, len-20);
+   memcpy(payload, ptr, len-20);
    
    uint32_t originIP = pktHdr->ip_src.s_addr;
    
@@ -116,14 +116,10 @@ int handle_ip_pkt(struct sr_instance* sr, uint8_t* Pkt, char* interface, unsigne
    time_t now = time(NULL);
    int checkArp; 
    checkArp = find_and_update(sr, originIP, srcMAC, now);
-   
-   if(cksum((uint8_t*)pktHdr, 20)){
-      printf("@@@@@@@@@@@@@@@@@@@@@@    CHECKSUM WAS INVALID SO WE WILL DROP THE PACKET\n");
-      return -2;
-   }
-   
-   if(pktHdr->ip_len != htons(20)){
+      
+   if(pktHdr->ip_hl != 5){
       //means there were IP options so unerachable (host or network?)
+      printf("@@@@@@@@@@@@@@@@@@@@@@@@@@      IP hdr length was %u. Should have been 5 (e.g. 20 bytes)\n", pktHdr->ip_hl);
       uint8_t* data = (uint8_t*)malloc_or_die(28);
       memcpy(data, Pkt, 28);
       int tmp;
@@ -131,6 +127,11 @@ int handle_ip_pkt(struct sr_instance* sr, uint8_t* Pkt, char* interface, unsigne
       return -3;
    }
    
+   if(cksum((uint8_t*)pktHdr, 20)){
+      printf("@@@@@@@@@@@@@@@@@@@@@@    CHECKSUM 0x%hx WAS INVALID SO WE WILL DROP THE PACKET\n", pktHdr->ip_sum);
+      return -2;
+   }
+
    if(pktHdr->ip_ttl < 2){
       printf("@@@@@@@@@@@@@@@@@@@@@@    TTL has expired so we will send back an ICMP\n");
       //get the data (IP hdr + 8 bytes of packet)
@@ -152,6 +153,7 @@ int handle_ip_pkt(struct sr_instance* sr, uint8_t* Pkt, char* interface, unsigne
             printf("After removing the IP header we are left with %d bytes\n", datalen);
             uint8_t* ICMP = (uint8_t*) malloc_or_die(datalen);
             //ICMP = array_cpy(Pkt->payload, datalen);
+            
             memcpy(ICMP, payload, datalen);
             int tmp;
             tmp = process_ICMP_pkt(sr, interface, originIP, ICMP, datalen); 
@@ -167,7 +169,7 @@ int handle_ip_pkt(struct sr_instance* sr, uint8_t* Pkt, char* interface, unsigne
    }
    else{
       printf("**********  Not my packet, so I will forward it\n");
-      return 2;
+      return 3;
    }
    return 0;
 }
@@ -184,12 +186,14 @@ int process_ICMP_pkt(struct sr_instance* sr, char* interface, uint32_t srcIP, ui
    assert(interface);
    assert(packet);
    int rtn;
+   uint16_t ck = cksum(packet, len);
    //first thing is to do a checksum check
-   if(cksum(packet, len)){
-      printf("@@@@@@@@@@@@@@@@@@@@@@    CHECKSUM WAS INVALID SO WE WILL DROP THE PACKET\n");
-      return -2;
+   if(ck){
+      printf("@@@@@@@@@@@@@@@@@@@@@@   check came up %hu CHECKSUM 0x%x WAS INVALID SO WE WILL DROP THE PACKET\n", ck, ((struct sr_icmp_hdr*)packet)->checksum);
+      //return -2;
    }
-#if 0   
+
+#if 1   
    printf("********* at %s    ICMP Packet is 0x ", __func__);
    int i ;
    for(i = 0; i < len; i++){
@@ -201,6 +205,8 @@ int process_ICMP_pkt(struct sr_instance* sr, char* interface, uint32_t srcIP, ui
    
    struct sr_icmp_hdr* tmpH = (struct sr_icmp_hdr*) malloc_or_die(sizeof(struct sr_icmp_hdr));
    tmpH = (struct sr_icmp_hdr*)packet;
+   printf("@@@@@@@@@@   CHECKSUM 0x%x \n", tmpH->checksum);
+   
    uint16_t field1 = tmpH->field1;
    uint16_t field2 = tmpH->field2;
    
@@ -222,7 +228,6 @@ int process_ICMP_pkt(struct sr_instance* sr, char* interface, uint32_t srcIP, ui
    return rtn;
 }
 
-
 /*--------------------------------------------------------------------- 
  * Method: create ICMP pkt(struct sr_instance sr*, char* interface, uint32_t dstIP, uint8_t type, uint8_t code, uint8_t* data)
  * 
@@ -241,7 +246,7 @@ int create_ICMP_pkt(struct sr_instance* sr, char* interface, uint32_t dstIP, uin
    assert(interface);
 #if 0   
    printf("********* at %s    Payload is 0x ", __func__);
-   int i ;
+   int i;
    for(i = 0; i < datalen; i++){
       printf("%x", data[i]);
    }
@@ -333,7 +338,25 @@ int make_and_send(struct sr_instance* sr, char * interface, uint32_t dstIP, uint
       printf("%hhx ", payld[i]);
    }
    printf("\n");
-#endif   
+#endif 
+
+/* doing some testing
+
+ */
+
+
+printf("\n*************************\n\n");
+
+print_ip(dstIP);
+
+printf("\n\n**************************\n\n");
+char* test;
+test = longest_prefix(sr, ntohl(dstIP));
+
+   printf("\n\n**************************\n");
+
+
+  
    struct sr_vns_if* myIntf = sr_get_interface(sr, interface);
    
    struct ip* ipHdr = (struct ip*) malloc_or_die(20);
