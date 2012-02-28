@@ -6,15 +6,6 @@
 #include "sr_router.h"
 #include "sr_handler.h"
 
-/*
-   creates a new arp_cache_list and returns a pointer
-*/
-
- struct arp_cache_list* create_cache_new(){
-   struct arp_cache_list* new = (struct arp_cache_list*) malloc_or_die(sizeof(struct arp_cache_list));
-   new->next = NULL;
-   return new;
-}
 
 /*
  adds a new entry at start of list (just after head)
@@ -41,6 +32,33 @@ void add_cache_entry(struct sr_instance* sr, uint32_t IP, uint8_t MAC[6], time_t
    subs->arp_cache = new_entry;
   
 }
+
+/*
+ adds a new entry at start of list (just after head)
+ sets correct creation time
+ then returns the pointer to the new entry
+ */
+
+void add_static_entry(struct sr_instance* sr, uint32_t IP, uint8_t MAC[6], time_t created){
+   assert(sr);
+   struct sr_router* subs = (struct sr_router*)sr_get_subsystem(sr);
+   assert(subs);
+   struct arp_cache_list* new_entry = (struct arp_cache_list*) malloc_or_die(sizeof(struct arp_cache_list));
+   new_entry->IP = IP;
+   mac_copy(MAC, new_entry->MAC);
+   new_entry->created = created;
+   
+   if(subs->arp_cache_static == NULL){ /* there was no pre-extant cache*/
+      new_entry->next = NULL;
+      subs->arp_cache_static = new_entry;
+      return;
+   }
+   //headRef = &subs->arp_cache;
+   new_entry->next = subs->arp_cache_static;
+   subs->arp_cache_static = new_entry;
+   
+}
+
 
 /*
  Looks through the cache list
@@ -115,10 +133,11 @@ int get_cache_length(struct sr_instance* sr, unsigned int type){
   assert(sr);
   struct sr_router* sub = (struct sr_router*)sr_get_subsystem(sr);
   assert(sub);
-  int length;
+  int length = 0;
   if(type == 1){  /* dynamic cache */
      struct arp_cache_list* current = sub->arp_cache;
      while(current != NULL){
+        printf("length %d ", length);
         length++;
         current = current->next;
      }
@@ -137,7 +156,10 @@ int get_cache_length(struct sr_instance* sr, unsigned int type){
  returns the number of entries removed
  */
 
-int remove_cache_entry(struct arp_cache_list* head, uint32_t IP){
+int remove_cache_entry(struct sr_instance* sr, uint32_t IP){
+  assert(sr);
+  struct sr_router* sub = (struct sr_router*)sr_get_subsystem(sr);
+  assert(sub);
   int count = 0;
   struct arp_cache_list* current = head;
   while (current != NULL){
@@ -150,6 +172,32 @@ int remove_cache_entry(struct arp_cache_list* head, uint32_t IP){
   return count;
 }
 
+/***********************************************
+*  2 identical functions to delete all entries 
+*  in eitehr static or dynamic cache. Both 
+*  return the number of entries deleted. These
+*  will be hooked into the two arp_cache_*_purge
+*  commands in cli.
+************************************************/
+
+int delete_arp_cache(struct sr_instance*){
+   assert(sr);
+   struct sr_router* sub = (struct sr_router*)sr_get_subsystem(sr);
+   assert(sub);
+   int count = 0;
+   
+   
+   return 0;
+}
+int delete_static_cache(struct sr_instance*){
+   assert(sr);
+   struct sr_router* sub = (struct sr_router*)sr_get_subsystem(sr);
+   assert(sub);
+   int count = 0;
+   
+   
+   return 0;
+}
 
 // CODE BELOW HERE MAY BE WRONG
 
@@ -193,7 +241,7 @@ int process_arp(struct sr_instance* sr, char* intf, struct sr_arphdr* arp){
       return -1;
    }
 
-   if(interface->ip == arp->ar_tip) {
+   if(check_my_interface(sr, arp->ar_tip)){
       //this is our packet
       //look for an existing entry (and update if needed)
       time_t now = time(NULL);
@@ -396,32 +444,56 @@ int send_arp_request(struct sr_instance * sr, char* iface, uint8_t* payload, uin
    return rtn;
 }
 
-
 //which in turn means we need a structure to store the pending requests
 
-#if 0
-void arp_cache_cleanup(struct sr_instance *){
+#if 1
+void arp_cache_cleanup(struct sr_instance *sr){
    
    struct sr_router* sub = (struct sr_router*)sr_get_subsystem(sr);   /*garbage collect  */
    while (1) {
+      assert(sr);
+      struct sr_router* sub = (struct sr_router*)sr_get_subsystem(sr);
+      assert(sub);
       struct timespec delay, remains;
       delay.tv_sec = ARP_GC_INTERVAL_S;
       delay.tv_nsec = 0; 
       int done = 1; 
-      int i, count;
+      int count;
       /* so what do we need to do to garbage collect?*/
-      
+      printf("PEEKABOO !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
       done = nanosleep(&delay, &remains);
       if(done == 0) {
-         pthread_mutex_lock(sub->arp_cache->lock);
-         printf("@ * GARBAGE COLLECTION * @\n");
          count = get_cache_length(sr, 1);
-         for(i = 0; i< count; i++){
-            //go through each entry and check if timed out
-            
-            //if timed out, remove the entry and hook "prev"->next into this->next
+         pthread_mutex_lock(sub->lock);
+         printf("@ * GARBAGE COLLECTION * @\n");
+         time_t now = time(NULL);
+         time_t then;
+         struct arp_cache_list* step;
+         struct arp_cache_list* prev;
+         struct arp_cache_list* tmp;
+         step = sub->arp_cache;
+         prev = sub->arp_cache;
+         while(step != NULL){
+            if (difftime(now, sub->arp_cache->created) > ARP_TIMEOUT_INTERVAL){
+               printf("*****  $$$$  ***** %s:  We had %d ARP entries and current one timed out\n",__func__, count);
+               if(count >1){
+                  prev->next = step->next;  //remove the link to current
+                  count--;
+                  }
+                  else{
+                     printf("@@@@      ********     KILL THE CACHE\n");
+                     count = 0;
+                     sub->arp_cache = NULL;
+                  }
+            }
+            else {
+               printf("Nothing to delete in ARP cache\n");
+               prev = step;
+            }
+            step = step->next;
          }
-         pthread_mutex_unlock(sub->arp_cache->lock);
+         
+         pthread_mutex_unlock(sub->lock);
          done = 1;  
       }
       else

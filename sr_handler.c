@@ -142,7 +142,7 @@ int handle_ip_pkt(struct sr_instance* sr, uint8_t* Pkt, char* interface, unsigne
       return -1;
    }
    
-   if((uint32_t)pktHdr->ip_dst.s_addr == myIP){
+   if(check_my_interface(sr, (uint32_t)pktHdr->ip_dst.s_addr)){ 
       
       printf("This is my packet so I will process it\n");
       
@@ -355,8 +355,6 @@ test = longest_prefix(sr, ntohl(dstIP));
 
    printf("\n\n**************************\n");
 
-
-  
    struct sr_vns_if* myIntf = sr_get_interface(sr, interface);
    
    struct ip* ipHdr = (struct ip*) malloc_or_die(20);

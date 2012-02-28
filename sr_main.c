@@ -49,9 +49,9 @@ int main(int argc, char** argv)
 
     sr_init_low_level_subystem(argc, argv);
 
-    /* start the command-line interface (blocks until the router terminates) */
+    /* start the command-line interface (blocks until the router terminates)*/
     if( cli_main( CLI_PORT ) == CLI_ERROR )
-        fprintf( stderr, "Error: unable to setup the command-line interface server\n" );
+        fprintf( stderr, "Error: unable to setup the command-line interface server\n" ); 
 
     return 0;
 } /* -- main -- */

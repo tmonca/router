@@ -65,6 +65,11 @@ void sr_integ_init(struct sr_instance* sr)
     
     //subsystem->arp_cache = (struct arp_cache_list*)malloc_or_die(sizeof(struct arp_cache_list));
     subsystem->waitSend = (struct send_list*)malloc_or_die(sizeof(struct send_list));
+    subsystem->lock = (pthread_mutex_t*)malloc_or_die(sizeof(pthread_mutex_t));
+    
+    pthread_create(&subsystem->garbage, NULL, arp_cache_cleanup, (void*) sr);
+    pthread_detach(subsystem->garbage);
+    
     
 } /* -- sr_integ_init -- */
 
@@ -145,6 +150,10 @@ int test, sent;
          }
          else if(arp == -2){
             uint32_t IP = ((struct ip*)Pkt)->ip_dst.s_addr;
+            ((struct ip*)Pkt)->ip_ttl--;
+            uint16_t TS = ((struct ip*)Pkt)->ip_sum;
+            TS++;
+            ((struct ip*)Pkt)->ip_sum = TS;
             printf("@@   ******   @@   *****    CHECK THIS MAKES SENSE: ");
             print_ip(IP);
             char* intf = longest_prefix(sr, IP);
@@ -162,7 +171,15 @@ int test, sent;
             case 3: 
                printf("******************   This isn't my packet so I will now call forwarding code\n");
                uint32_t IP = ((struct ip*)Pkt)->ip_dst.s_addr;
-               //printf("@@   ******   @@   *****    CHECK THIS MAKES SENSE: ");
+               printf("**************    Decrement TTL from %hhu to ", ((struct ip*)Pkt)->ip_ttl);
+               ((struct ip*)Pkt)->ip_ttl--;
+               printf("%hhu \nand recalc checksum from 0x%hx to ", ((struct ip*)Pkt)->ip_ttl, ((struct ip*)Pkt)->ip_sum);
+               
+               uint16_t TS = ((struct ip*)Pkt)->ip_sum;
+               TS++;
+               ((struct ip*)Pkt)->ip_sum = TS;
+               printf("0x%hx\n              ______________ \n", ((struct ip*)Pkt)->ip_sum);
+               
                print_ip(IP);
                char* intf = longest_prefix(sr, IP);
                

@@ -17,7 +17,7 @@
 #include "sr_protocol.h"
 #include "sr_base_internal.h"
 #include "cli/helper.h"
-
+#include "sr_arp.h"
 
 
 #define INIT_TTL 255
@@ -43,6 +43,7 @@ struct sr_router
     struct send_list* waitSend;
     
     //add a mutex
+    pthread_t garbage;
     pthread_mutex_t* lock;
     
 };
@@ -60,32 +61,5 @@ void sr_print_if_list(struct sr_instance* );
 
 #if 0
 
-
-pthread_create(&garbage, NULL, garbage_loop, (void*) router->arp_cache);
-pthread_detach(garbage);
-
-}
-
-void garbage_loop(arp_cache_t* cache){
-   
-   /*garbage collect  */
-   while (1) {
-      struct timespec delay, remains;
-      delay.tv_sec = ARP_GC_INTERVAL_S;
-      delay.tv_nsec = 1; 
-      int done = 1; 
-      /*pthread_mutex_lock (router->arp_cache->Lock);*/
-      
-      /* so what do we need to do to garbage collect?*/
-      
-      done = nanosleep(&delay, &remains);
-      if(done == 0) {
-         printf("@ * GARBAGE COLLECTION * @\n");
-         done = 1;  
-      }
-      else
-         printf("******************\n");
-   }
-}
 #endif
 #endif /* SR_ROUTER_H */

@@ -13,6 +13,15 @@
 #include "sr_help.h"
 #include "sr_if.h"
 
+#ifndef ARP_GC_INTERVAL_S    /* ARP cache garbeage collector delay */
+#define ARP_GC_INTERVAL_S 5
+#endif
+
+
+#ifndef ARP_TIMEOUT_INTERVAL    /* ARP cache entry timeout */
+#define ARP_TIMEOUT_INTERVAL 25
+#endif
+
 
 //struct for arp entry linked list
 
@@ -25,13 +34,17 @@ struct arp_cache_list{
 
 };
 
-struct arp_cache_list* create_cache_new();
 void add_cache_entry(struct sr_instance*, uint32_t, uint8_t MAC[6], time_t);
+void add_static_entry(struct sr_instance*, uint32_t, uint8_t MAC[6], time_t);
+
 uint8_t* find_mac_in_cache(struct sr_instance*, uint32_t);
 int find_and_update(struct sr_instance*, uint32_t, uint8_t MAC[6], time_t);
 
 int get_cache_length(struct sr_instance*, unsigned int);
-int remove_cache_entry(struct arp_cache_list*, uint32_t);
+int remove_cache_entry(struct sr_instance*, uint32_t);
+
+int delete_arp_cache(struct sr_instance*);
+int delete_static_cache(struct sr_instance*);
 
 int process_arp(struct sr_instance*, char*, struct sr_arphdr*);
 

@@ -1,24 +1,23 @@
-/* A Bison parser, made by GNU Bison 2.3.  */
+
+/* A Bison parser, made by GNU Bison 2.4.1.  */
 
 /* Skeleton implementation for Bison's Yacc-like parsers in C
-
-   Copyright (C) 1984, 1989, 1990, 2000, 2001, 2002, 2003, 2004, 2005, 2006
+   
+      Copyright (C) 1984, 1989, 1990, 2000, 2001, 2002, 2003, 2004, 2005, 2006
    Free Software Foundation, Inc.
-
-   This program is free software; you can redistribute it and/or modify
+   
+   This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
-   any later version.
-
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+   
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-
+   
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street, Fifth Floor,
-   Boston, MA 02110-1301, USA.  */
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
 
 /* As a special exception, you may create a larger work that contains
    part or all of the Bison parser skeleton and distribute that work
@@ -29,7 +28,7 @@
    special exception, which will cause the skeleton and the resulting
    Bison output files to be licensed under the GNU General Public
    License without this special exception.
-
+   
    This special exception was added by the Free Software Foundation in
    version 2.2 of Bison.  */
 
@@ -47,7 +46,7 @@
 #define YYBISON 1
 
 /* Bison version.  */
-#define YYBISON_VERSION "2.3"
+#define YYBISON_VERSION "2.4.1"
 
 /* Skeleton name.  */
 #define YYSKELETON_NAME "yacc.c"
@@ -55,9 +54,119 @@
 /* Pure parsers.  */
 #define YYPURE 0
 
+/* Push parsers.  */
+#define YYPUSH 0
+
+/* Pull parsers.  */
+#define YYPULL 1
+
 /* Using locations.  */
 #define YYLSP_NEEDED 0
 
+
+
+/* Copy the first part of user declarations.  */
+
+/* Line 189 of yacc.c  */
+#line 3 "cli_parser.y"
+
+
+#include <string.h>              /* memcpy(), memmove(), memset()     */
+#include "cli.h"                 /* implementation of CLI methods     */
+#include "cli_help.h"            /* cli_help_t, cli_send_help()       */
+#include "cli_scanner.h"         /* for yylex                         */
+#include "cli_parser.h"          /* parser external API               */
+#include "helper.h"
+
+/** buffer to feed to the parser */
+static char cmd_buf[CLI_MAX_BUF+2];
+
+/** number of bytes used in buf */
+static unsigned cmd_blen;
+
+/**
+ * Manual Error Handler.  If not NULL, then yyerror will not print an error
+ * message (the user is manually handling the error).  This points to the error
+ * desc text to use in yyerror.  (Syntax Error: <meh_desc>).  If meh_desc is
+ * NULL, and yyerror is called, then the argument passed to yyerror is used.
+ */
+const char* meh_desc;
+int meh_has_usage;
+int meh_ignore;
+int meh_force;
+
+/** Handles printing a nicely formatted error. */
+void yyerror( const char* desc );
+static int has_error;
+char token_err[128];
+
+/* convenience */
+#define ERR(desc) parse_error(desc);
+#define ERR_TMI   ERR("expected end-of-command (newline)")
+#define ERR_WRONG ERR("unexpected token")
+#define ERR_IP    ERR("expected IP address")
+#define ERR_MAC   ERR("expected MAC address")
+#define ERR_INTF  ERR("expected interface name")
+#define ERR_NO_USAGE(desc) parse_error(desc); meh_force = 1; meh_has_usage = 0; meh_ignore = 0;
+#define ERR_IGNORE meh_ignore = 1;
+
+/* We only want to call a command once it is completely parsed (with the
+   exception of help commands which fire on errors and can be safely executed
+   immediately as actions).  This is a gross, but these structs hold the parsed
+   data until it is time to execute a command. */
+gross_object_t gobj;
+gross_arp_t garp;
+gross_intf_t gintf;
+gross_route_t grt;
+gross_ip_t gip;
+gross_ip_int_t giip;
+gross_option_t gopt;
+#define SETC_FUNC0(func)      gobj.func_do0=func; gobj.func_do1=NULL; gobj.data=NULL
+#define SETC_FUNC1(func)      gobj.func_do0=NULL; gobj.func_do1=(void (*)(void*))func; gobj.data=NULL
+#define SETC_ARP_IP(func,xip)  SETC_FUNC1(func); gobj.data=&garp; garp.ip=xip
+#define SETC_ARP(func,ip,xmac) SETC_ARP_IP(func,ip); memcpy(garp.mac, xmac, 6);
+#define SETC_INTF(func,name)  SETC_FUNC1(func); gobj.data=&gintf; gintf.intf_name=name
+#define SETC_INTF_SET(func,name,xip,sm) SETC_INTF(func,name); gintf.ip=xip; gintf.subnet_mask=sm
+#define SETC_RT(func,xdest,xmask) SETC_FUNC1(func); gobj.data=&grt; grt.dest=xdest; grt.mask=xmask
+#define SETC_RT_ADD(func,dest,xgw,mask,intf) SETC_RT(func,dest,mask); grt.gw=xgw; grt.intf_name=intf
+#define SETC_IP(func,xip) SETC_FUNC1(func); gobj.data=&gip; gip.ip=xip
+#define SETC_IP_INT(func,xip,xn) SETC_FUNC1(func); gobj.data=&giip; giip.ip=xip; giip.count=xn
+#define SETC_OPT(func) SETC_FUNC1(func); gobj.data=&gopt
+
+/** Clears out any previous command */
+static void clear_command();
+
+/** Run the command stored in gobj, if any. */
+static void run_command();
+
+/**
+ * Convenience method for when a help command is called (directly or by an
+ * error handler).
+ */
+#define HELP(h) cli_send_help(h); clear_command(); YYABORT;
+
+
+
+/* Line 189 of yacc.c  */
+#line 152 "y.tab.c"
+
+/* Enabling traces.  */
+#ifndef YYDEBUG
+# define YYDEBUG 1
+#endif
+
+/* Enabling verbose error messages.  */
+#ifdef YYERROR_VERBOSE
+# undef YYERROR_VERBOSE
+# define YYERROR_VERBOSE 1
+#else
+# define YYERROR_VERBOSE 0
+#endif
+
+/* Enabling the token table.  */
+#ifndef YYTOKEN_TABLE
+# define YYTOKEN_TABLE 0
+#endif
 
 
 /* Tokens.  */
@@ -151,128 +260,34 @@
 
 
 
-/* Copy the first part of user declarations.  */
-#line 3 "cli_parser.y"
-
-
-#include <string.h>              /* memcpy(), memmove(), memset()     */
-#include "cli.h"                 /* implementation of CLI methods     */
-#include "cli_help.h"            /* cli_help_t, cli_send_help()       */
-#include "cli_scanner.h"         /* for yylex                         */
-#include "cli_parser.h"          /* parser external API               */
-#include "helper.h"
-
-/** buffer to feed to the parser */
-static char cmd_buf[CLI_MAX_BUF+2];
-
-/** number of bytes used in buf */
-static unsigned cmd_blen;
-
-/**
- * Manual Error Handler.  If not NULL, then yyerror will not print an error
- * message (the user is manually handling the error).  This points to the error
- * desc text to use in yyerror.  (Syntax Error: <meh_desc>).  If meh_desc is
- * NULL, and yyerror is called, then the argument passed to yyerror is used.
- */
-const char* meh_desc;
-int meh_has_usage;
-int meh_ignore;
-int meh_force;
-
-/** Handles printing a nicely formatted error. */
-void yyerror( const char* desc );
-static int has_error;
-char token_err[128];
-
-/* convenience */
-#define ERR(desc) parse_error(desc);
-#define ERR_TMI   ERR("expected end-of-command (newline)")
-#define ERR_WRONG ERR("unexpected token")
-#define ERR_IP    ERR("expected IP address")
-#define ERR_MAC   ERR("expected MAC address")
-#define ERR_INTF  ERR("expected interface name")
-#define ERR_NO_USAGE(desc) parse_error(desc); meh_force = 1; meh_has_usage = 0; meh_ignore = 0;
-#define ERR_IGNORE meh_ignore = 1;
-
-/* We only want to call a command once it is completely parsed (with the
-   exception of help commands which fire on errors and can be safely executed
-   immediately as actions).  This is a gross, but these structs hold the parsed
-   data until it is time to execute a command. */
-gross_object_t gobj;
-gross_arp_t garp;
-gross_intf_t gintf;
-gross_route_t grt;
-gross_ip_t gip;
-gross_ip_int_t giip;
-gross_option_t gopt;
-#define SETC_FUNC0(func)      gobj.func_do0=func; gobj.func_do1=NULL; gobj.data=NULL
-#define SETC_FUNC1(func)      gobj.func_do0=NULL; gobj.func_do1=(void (*)(void*))func; gobj.data=NULL
-#define SETC_ARP_IP(func,xip)  SETC_FUNC1(func); gobj.data=&garp; garp.ip=xip
-#define SETC_ARP(func,ip,xmac) SETC_ARP_IP(func,ip); memcpy(garp.mac, xmac, 6);
-#define SETC_INTF(func,name)  SETC_FUNC1(func); gobj.data=&gintf; gintf.intf_name=name
-#define SETC_INTF_SET(func,name,xip,sm) SETC_INTF(func,name); gintf.ip=xip; gintf.subnet_mask=sm
-#define SETC_RT(func,xdest,xmask) SETC_FUNC1(func); gobj.data=&grt; grt.dest=xdest; grt.mask=xmask
-#define SETC_RT_ADD(func,dest,xgw,mask,intf) SETC_RT(func,dest,mask); grt.gw=xgw; grt.intf_name=intf
-#define SETC_IP(func,xip) SETC_FUNC1(func); gobj.data=&gip; gip.ip=xip
-#define SETC_IP_INT(func,xip,xn) SETC_FUNC1(func); gobj.data=&giip; giip.ip=xip; giip.count=xn
-#define SETC_OPT(func) SETC_FUNC1(func); gobj.data=&gopt
-
-/** Clears out any previous command */
-static void clear_command();
-
-/** Run the command stored in gobj, if any. */
-static void run_command();
-
-/**
- * Convenience method for when a help command is called (directly or by an
- * error handler).
- */
-#define HELP(h) cli_send_help(h); clear_command(); YYABORT;
-
-
-
-/* Enabling traces.  */
-#ifndef YYDEBUG
-# define YYDEBUG 1
-#endif
-
-/* Enabling verbose error messages.  */
-#ifdef YYERROR_VERBOSE
-# undef YYERROR_VERBOSE
-# define YYERROR_VERBOSE 1
-#else
-# define YYERROR_VERBOSE 0
-#endif
-
-/* Enabling the token table.  */
-#ifndef YYTOKEN_TABLE
-# define YYTOKEN_TABLE 0
-#endif
-
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
-#line 81 "cli_parser.y"
 {
+
+/* Line 214 of yacc.c  */
+#line 81 "cli_parser.y"
+
     int intVal;
     uint32_t ip;
     uint8_t mac[6];
     char string[MAX_STR_LEN];
-}
-/* Line 193 of yacc.c.  */
-#line 263 "y.tab.c"
-	YYSTYPE;
+
+
+
+/* Line 214 of yacc.c  */
+#line 279 "y.tab.c"
+} YYSTYPE;
+# define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
-# define YYSTYPE_IS_TRIVIAL 1
 #endif
-
 
 
 /* Copy the second part of user declarations.  */
 
 
-/* Line 216 of yacc.c.  */
-#line 276 "y.tab.c"
+/* Line 264 of yacc.c  */
+#line 291 "y.tab.c"
 
 #ifdef short
 # undef short
@@ -347,14 +362,14 @@ typedef short int yytype_int16;
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
 static int
-YYID (int i)
+YYID (int yyi)
 #else
 static int
-YYID (i)
-    int i;
+YYID (yyi)
+    int yyi;
 #endif
 {
-  return i;
+  return yyi;
 }
 #endif
 
@@ -435,9 +450,9 @@ void free (void *); /* INFRINGES ON USER NAME SPACE */
 /* A type that is properly aligned for any stack member.  */
 union yyalloc
 {
-  yytype_int16 yyss;
-  YYSTYPE yyvs;
-  };
+  yytype_int16 yyss_alloc;
+  YYSTYPE yyvs_alloc;
+};
 
 /* The size of the maximum gap between one aligned stack and the next.  */
 # define YYSTACK_GAP_MAXIMUM (sizeof (union yyalloc) - 1)
@@ -471,12 +486,12 @@ union yyalloc
    elements in the stack, and YYPTR gives the new location of the
    stack.  Advance YYPTR to a properly aligned location for the next
    stack.  */
-# define YYSTACK_RELOCATE(Stack)					\
+# define YYSTACK_RELOCATE(Stack_alloc, Stack)				\
     do									\
       {									\
 	YYSIZE_T yynewbytes;						\
-	YYCOPY (&yyptr->Stack, Stack, yysize);				\
-	Stack = &yyptr->Stack;						\
+	YYCOPY (&yyptr->Stack_alloc, Stack, yysize);			\
+	Stack = &yyptr->Stack_alloc;					\
 	yynewbytes = yystacksize * sizeof (*Stack) + YYSTACK_GAP_MAXIMUM; \
 	yyptr += yynewbytes / sizeof (*yyptr);				\
       }									\
@@ -677,16 +692,16 @@ static const char *const yytname[] =
   "T_DEL", "T_UP", "T_DOWN", "T_PURGE", "T_STATIC", "T_DYNAMIC", "T_ABOUT",
   "T_PING", "T_TRACE", "T_HELP", "T_EXIT", "T_SHUTDOWN", "T_FLOOD",
   "T_SET", "T_UNSET", "T_OPTION", "T_VERBOSE", "T_DATE", "TAV_INT",
-  "TAV_IP", "TAV_MAC", "TAV_STR", "$accept", "Start", "@1", "Command",
-  "@2", "ShowCommand", "ShowType", "ShowTypeHW", "ShowTypeIP",
-  "ShowTypeOSPF", "TMIorQ", "@3", "WrongOrQ", "@4", "ShowTypeVNS",
-  "ManipCommand", "ManipTypeIP", "ManipTypeIPARP", "AddTransOrQ", "@5",
-  "@6", "DelTransOrQ", "@7", "ManipTypeIPInterface", "@8", "@9",
-  "ManipTypeIPOSPF", "ManipTypeIPRoute", "RouteAddOrQ", "@10", "@11",
-  "@12", "@13", "RouteDelOrQ", "@14", "@15", "ActionCommand", "ActionPing",
-  "@16", "ActionTrace", "@17", "ActionDate", "ActionExit",
-  "ActionShutdown", "ActionHelp", "@18", "@19", "HelpOrQ", "OptionCommand",
-  "OptionAction", "Option", "ShowTypeOption", 0
+  "TAV_IP", "TAV_MAC", "TAV_STR", "$accept", "Start", "$@1", "Command",
+  "$@2", "ShowCommand", "ShowType", "ShowTypeHW", "ShowTypeIP",
+  "ShowTypeOSPF", "TMIorQ", "$@3", "WrongOrQ", "$@4", "ShowTypeVNS",
+  "ManipCommand", "ManipTypeIP", "ManipTypeIPARP", "AddTransOrQ", "$@5",
+  "$@6", "DelTransOrQ", "$@7", "ManipTypeIPInterface", "$@8", "$@9",
+  "ManipTypeIPOSPF", "ManipTypeIPRoute", "RouteAddOrQ", "$@10", "$@11",
+  "$@12", "$@13", "RouteDelOrQ", "$@14", "$@15", "ActionCommand",
+  "ActionPing", "$@16", "ActionTrace", "$@17", "ActionDate", "ActionExit",
+  "ActionShutdown", "ActionHelp", "$@18", "$@19", "HelpOrQ",
+  "OptionCommand", "OptionAction", "Option", "ShowTypeOption", 0
 };
 #endif
 
@@ -1136,17 +1151,20 @@ yy_symbol_print (yyoutput, yytype, yyvaluep)
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
 static void
-yy_stack_print (yytype_int16 *bottom, yytype_int16 *top)
+yy_stack_print (yytype_int16 *yybottom, yytype_int16 *yytop)
 #else
 static void
-yy_stack_print (bottom, top)
-    yytype_int16 *bottom;
-    yytype_int16 *top;
+yy_stack_print (yybottom, yytop)
+    yytype_int16 *yybottom;
+    yytype_int16 *yytop;
 #endif
 {
   YYFPRINTF (stderr, "Stack now");
-  for (; bottom <= top; ++bottom)
-    YYFPRINTF (stderr, " %d", *bottom);
+  for (; yybottom <= yytop; yybottom++)
+    {
+      int yybot = *yybottom;
+      YYFPRINTF (stderr, " %d", yybot);
+    }
   YYFPRINTF (stderr, "\n");
 }
 
@@ -1180,11 +1198,11 @@ yy_reduce_print (yyvsp, yyrule)
   /* The symbols being reduced.  */
   for (yyi = 0; yyi < yynrhs; yyi++)
     {
-      fprintf (stderr, "   $%d = ", yyi + 1);
+      YYFPRINTF (stderr, "   $%d = ", yyi + 1);
       yy_symbol_print (stderr, yyrhs[yyprhs[yyrule] + yyi],
 		       &(yyvsp[(yyi + 1) - (yynrhs)])
 		       		       );
-      fprintf (stderr, "\n");
+      YYFPRINTF (stderr, "\n");
     }
 }
 
@@ -1464,10 +1482,8 @@ yydestruct (yymsg, yytype, yyvaluep)
 	break;
     }
 }
-
 
 /* Prevent warnings from -Wmissing-prototypes.  */
-
 #ifdef YYPARSE_PARAM
 #if defined __STDC__ || defined __cplusplus
 int yyparse (void *YYPARSE_PARAM);
@@ -1483,11 +1499,10 @@ int yyparse ();
 #endif /* ! YYPARSE_PARAM */
 
 
-
-/* The look-ahead symbol.  */
+/* The lookahead symbol.  */
 int yychar;
 
-/* The semantic value of the look-ahead symbol.  */
+/* The semantic value of the lookahead symbol.  */
 YYSTYPE yylval;
 
 /* Number of syntax errors so far.  */
@@ -1495,9 +1510,9 @@ int yynerrs;
 
 
 
-/*----------.
-| yyparse.  |
-`----------*/
+/*-------------------------.
+| yyparse or yypush_parse.  |
+`-------------------------*/
 
 #ifdef YYPARSE_PARAM
 #if (defined __STDC__ || defined __C99__FUNC__ \
@@ -1521,14 +1536,39 @@ yyparse ()
 #endif
 #endif
 {
-  
-  int yystate;
+
+
+    int yystate;
+    /* Number of tokens to shift before error messages enabled.  */
+    int yyerrstatus;
+
+    /* The stacks and their tools:
+       `yyss': related to states.
+       `yyvs': related to semantic values.
+
+       Refer to the stacks thru separate pointers, to allow yyoverflow
+       to reallocate them elsewhere.  */
+
+    /* The state stack.  */
+    yytype_int16 yyssa[YYINITDEPTH];
+    yytype_int16 *yyss;
+    yytype_int16 *yyssp;
+
+    /* The semantic value stack.  */
+    YYSTYPE yyvsa[YYINITDEPTH];
+    YYSTYPE *yyvs;
+    YYSTYPE *yyvsp;
+
+    YYSIZE_T yystacksize;
+
   int yyn;
   int yyresult;
-  /* Number of tokens to shift before error messages enabled.  */
-  int yyerrstatus;
-  /* Look-ahead token as an internal (translated) token number.  */
-  int yytoken = 0;
+  /* Lookahead token as an internal (translated) token number.  */
+  int yytoken;
+  /* The variables used to return semantic value and location from the
+     action routines.  */
+  YYSTYPE yyval;
+
 #if YYERROR_VERBOSE
   /* Buffer for error messages, and its allocated size.  */
   char yymsgbuf[128];
@@ -1536,51 +1576,28 @@ yyparse ()
   YYSIZE_T yymsg_alloc = sizeof yymsgbuf;
 #endif
 
-  /* Three stacks and their tools:
-     `yyss': related to states,
-     `yyvs': related to semantic values,
-     `yyls': related to locations.
-
-     Refer to the stacks thru separate pointers, to allow yyoverflow
-     to reallocate them elsewhere.  */
-
-  /* The state stack.  */
-  yytype_int16 yyssa[YYINITDEPTH];
-  yytype_int16 *yyss = yyssa;
-  yytype_int16 *yyssp;
-
-  /* The semantic value stack.  */
-  YYSTYPE yyvsa[YYINITDEPTH];
-  YYSTYPE *yyvs = yyvsa;
-  YYSTYPE *yyvsp;
-
-
-
 #define YYPOPSTACK(N)   (yyvsp -= (N), yyssp -= (N))
-
-  YYSIZE_T yystacksize = YYINITDEPTH;
-
-  /* The variables used to return semantic value and location from the
-     action routines.  */
-  YYSTYPE yyval;
-
 
   /* The number of symbols on the RHS of the reduced rule.
      Keep to zero when no symbol should be popped.  */
   int yylen = 0;
+
+  yytoken = 0;
+  yyss = yyssa;
+  yyvs = yyvsa;
+  yystacksize = YYINITDEPTH;
 
   YYDPRINTF ((stderr, "Starting parse\n"));
 
   yystate = 0;
   yyerrstatus = 0;
   yynerrs = 0;
-  yychar = YYEMPTY;		/* Cause a token to be read.  */
+  yychar = YYEMPTY; /* Cause a token to be read.  */
 
   /* Initialize stack pointers.
      Waste one element of value and location stack
      so that they stay on the same level as the state stack.
      The wasted elements are never initialized.  */
-
   yyssp = yyss;
   yyvsp = yyvs;
 
@@ -1610,7 +1627,6 @@ yyparse ()
 	YYSTYPE *yyvs1 = yyvs;
 	yytype_int16 *yyss1 = yyss;
 
-
 	/* Each stack pointer address is followed by the size of the
 	   data in use in that stack, in bytes.  This used to be a
 	   conditional around just the two extra args, but that might
@@ -1618,7 +1634,6 @@ yyparse ()
 	yyoverflow (YY_("memory exhausted"),
 		    &yyss1, yysize * sizeof (*yyssp),
 		    &yyvs1, yysize * sizeof (*yyvsp),
-
 		    &yystacksize);
 
 	yyss = yyss1;
@@ -1641,9 +1656,8 @@ yyparse ()
 	  (union yyalloc *) YYSTACK_ALLOC (YYSTACK_BYTES (yystacksize));
 	if (! yyptr)
 	  goto yyexhaustedlab;
-	YYSTACK_RELOCATE (yyss);
-	YYSTACK_RELOCATE (yyvs);
-
+	YYSTACK_RELOCATE (yyss_alloc, yyss);
+	YYSTACK_RELOCATE (yyvs_alloc, yyvs);
 #  undef YYSTACK_RELOCATE
 	if (yyss1 != yyssa)
 	  YYSTACK_FREE (yyss1);
@@ -1654,7 +1668,6 @@ yyparse ()
       yyssp = yyss + yysize - 1;
       yyvsp = yyvs + yysize - 1;
 
-
       YYDPRINTF ((stderr, "Stack size increased to %lu\n",
 		  (unsigned long int) yystacksize));
 
@@ -1664,6 +1677,9 @@ yyparse ()
 
   YYDPRINTF ((stderr, "Entering state %d\n", yystate));
 
+  if (yystate == YYFINAL)
+    YYACCEPT;
+
   goto yybackup;
 
 /*-----------.
@@ -1672,16 +1688,16 @@ yyparse ()
 yybackup:
 
   /* Do appropriate processing given the current state.  Read a
-     look-ahead token if we need one and don't already have one.  */
+     lookahead token if we need one and don't already have one.  */
 
-  /* First try to decide what to do without reference to look-ahead token.  */
+  /* First try to decide what to do without reference to lookahead token.  */
   yyn = yypact[yystate];
   if (yyn == YYPACT_NINF)
     goto yydefault;
 
-  /* Not known => get a look-ahead token if don't already have one.  */
+  /* Not known => get a lookahead token if don't already have one.  */
 
-  /* YYCHAR is either YYEMPTY or YYEOF or a valid look-ahead symbol.  */
+  /* YYCHAR is either YYEMPTY or YYEOF or a valid lookahead symbol.  */
   if (yychar == YYEMPTY)
     {
       YYDPRINTF ((stderr, "Reading a token: "));
@@ -1713,20 +1729,16 @@ yybackup:
       goto yyreduce;
     }
 
-  if (yyn == YYFINAL)
-    YYACCEPT;
-
   /* Count tokens shifted since error; after three, turn off error
      status.  */
   if (yyerrstatus)
     yyerrstatus--;
 
-  /* Shift the look-ahead token.  */
+  /* Shift the lookahead token.  */
   YY_SYMBOL_PRINT ("Shifting", yytoken, &yylval, &yylloc);
 
-  /* Discard the shifted token unless it is eof.  */
-  if (yychar != YYEOF)
-    yychar = YYEMPTY;
+  /* Discard the shifted token.  */
+  yychar = YYEMPTY;
 
   yystate = yyn;
   *++yyvsp = yylval;
@@ -1766,908 +1778,1269 @@ yyreduce:
   switch (yyn)
     {
         case 2:
+
+/* Line 1455 of yacc.c  */
 #line 104 "cli_parser.y"
     { clear_command(); }
     break;
 
   case 3:
+
+/* Line 1455 of yacc.c  */
 #line 104 "cli_parser.y"
     { run_command(); YYACCEPT; }
     break;
 
   case 8:
+
+/* Line 1455 of yacc.c  */
 #line 111 "cli_parser.y"
     {ERR_NO_USAGE("Unknown Command")}
     break;
 
   case 12:
+
+/* Line 1455 of yacc.c  */
 #line 118 "cli_parser.y"
     { SETC_FUNC0(cli_show_all); }
     break;
 
   case 18:
+
+/* Line 1455 of yacc.c  */
 #line 124 "cli_parser.y"
     { HELP(HELP_SHOW); }
     break;
 
   case 19:
+
+/* Line 1455 of yacc.c  */
 #line 127 "cli_parser.y"
     { SETC_FUNC0(cli_show_hw); }
     break;
 
   case 20:
+
+/* Line 1455 of yacc.c  */
 #line 128 "cli_parser.y"
     { SETC_FUNC0(cli_show_hw_about); }
     break;
 
   case 21:
+
+/* Line 1455 of yacc.c  */
 #line 129 "cli_parser.y"
     { HELP(HELP_SHOW_HW_ABOUT); }
     break;
 
   case 22:
+
+/* Line 1455 of yacc.c  */
 #line 130 "cli_parser.y"
     { SETC_FUNC0(cli_show_hw_arp); }
     break;
 
   case 23:
+
+/* Line 1455 of yacc.c  */
 #line 131 "cli_parser.y"
     { HELP(HELP_SHOW_HW_ARP); }
     break;
 
   case 24:
+
+/* Line 1455 of yacc.c  */
 #line 132 "cli_parser.y"
     { SETC_FUNC0(cli_show_hw_intf); }
     break;
 
   case 25:
+
+/* Line 1455 of yacc.c  */
 #line 133 "cli_parser.y"
     { HELP(HELP_SHOW_HW_INTF); }
     break;
 
   case 26:
+
+/* Line 1455 of yacc.c  */
 #line 134 "cli_parser.y"
     { SETC_FUNC0(cli_show_hw_route); }
     break;
 
   case 27:
+
+/* Line 1455 of yacc.c  */
 #line 135 "cli_parser.y"
     { HELP(HELP_SHOW_HW_ROUTE); }
     break;
 
   case 28:
+
+/* Line 1455 of yacc.c  */
 #line 136 "cli_parser.y"
     { HELP(HELP_SHOW_HW); }
     break;
 
   case 29:
+
+/* Line 1455 of yacc.c  */
 #line 139 "cli_parser.y"
     { SETC_FUNC0(cli_show_ip); }
     break;
 
   case 30:
+
+/* Line 1455 of yacc.c  */
 #line 140 "cli_parser.y"
     { SETC_FUNC0(cli_show_ip_arp); }
     break;
 
   case 31:
+
+/* Line 1455 of yacc.c  */
 #line 141 "cli_parser.y"
     { HELP(HELP_SHOW_IP_ARP); }
     break;
 
   case 32:
+
+/* Line 1455 of yacc.c  */
 #line 142 "cli_parser.y"
     { SETC_FUNC0(cli_show_ip_intf); }
     break;
 
   case 33:
+
+/* Line 1455 of yacc.c  */
 #line 143 "cli_parser.y"
     { HELP(HELP_SHOW_IP_INTF); }
     break;
 
   case 34:
+
+/* Line 1455 of yacc.c  */
 #line 144 "cli_parser.y"
     { SETC_FUNC0(cli_show_ip_route); }
     break;
 
   case 35:
+
+/* Line 1455 of yacc.c  */
 #line 145 "cli_parser.y"
     { HELP(HELP_SHOW_IP_ROUTE); }
     break;
 
   case 36:
+
+/* Line 1455 of yacc.c  */
 #line 146 "cli_parser.y"
     { HELP(HELP_SHOW_IP); }
     break;
 
   case 37:
+
+/* Line 1455 of yacc.c  */
 #line 149 "cli_parser.y"
     { SETC_FUNC0(cli_show_ospf); }
     break;
 
   case 38:
+
+/* Line 1455 of yacc.c  */
 #line 150 "cli_parser.y"
     { SETC_FUNC0(cli_show_ospf_neighbors); }
     break;
 
   case 39:
+
+/* Line 1455 of yacc.c  */
 #line 151 "cli_parser.y"
     { HELP(HELP_SHOW_OSPF_NEIGHBORS); }
     break;
 
   case 40:
+
+/* Line 1455 of yacc.c  */
 #line 152 "cli_parser.y"
     { SETC_FUNC0(cli_show_ospf_topo); }
     break;
 
   case 41:
+
+/* Line 1455 of yacc.c  */
 #line 153 "cli_parser.y"
     { HELP(HELP_SHOW_OSPF_TOPOLOGY); }
     break;
 
   case 42:
+
+/* Line 1455 of yacc.c  */
 #line 154 "cli_parser.y"
     { HELP(HELP_SHOW_OSPF); }
     break;
 
   case 44:
+
+/* Line 1455 of yacc.c  */
 #line 158 "cli_parser.y"
     {ERR_TMI}
     break;
 
   case 47:
+
+/* Line 1455 of yacc.c  */
 #line 162 "cli_parser.y"
     {ERR_WRONG}
     break;
 
   case 49:
+
+/* Line 1455 of yacc.c  */
 #line 165 "cli_parser.y"
     { SETC_FUNC0(cli_show_vns); }
     break;
 
   case 50:
+
+/* Line 1455 of yacc.c  */
 #line 166 "cli_parser.y"
     { SETC_FUNC0(cli_show_vns_lhost); }
     break;
 
   case 51:
+
+/* Line 1455 of yacc.c  */
 #line 167 "cli_parser.y"
     { HELP(HELP_SHOW_VNS_LHOST); }
     break;
 
   case 52:
+
+/* Line 1455 of yacc.c  */
 #line 168 "cli_parser.y"
     { SETC_FUNC0(cli_show_vns_topo); }
     break;
 
   case 53:
+
+/* Line 1455 of yacc.c  */
 #line 169 "cli_parser.y"
     { HELP(HELP_SHOW_VNS_TOPOLOGY); }
     break;
 
   case 54:
+
+/* Line 1455 of yacc.c  */
 #line 170 "cli_parser.y"
     { SETC_FUNC0(cli_show_vns_user); }
     break;
 
   case 55:
+
+/* Line 1455 of yacc.c  */
 #line 171 "cli_parser.y"
     { HELP(HELP_SHOW_VNS_USER); }
     break;
 
   case 56:
+
+/* Line 1455 of yacc.c  */
 #line 172 "cli_parser.y"
     { SETC_FUNC0(cli_show_vns_vhost); }
     break;
 
   case 57:
+
+/* Line 1455 of yacc.c  */
 #line 173 "cli_parser.y"
     { HELP(HELP_SHOW_VNS_VHOST); }
     break;
 
   case 58:
+
+/* Line 1455 of yacc.c  */
 #line 174 "cli_parser.y"
     { HELP(HELP_SHOW_VNS); }
     break;
 
   case 64:
+
+/* Line 1455 of yacc.c  */
 #line 186 "cli_parser.y"
     { HELP(HELP_MANIP_IP_ARP); }
     break;
 
   case 67:
+
+/* Line 1455 of yacc.c  */
 #line 189 "cli_parser.y"
     { SETC_FUNC0(cli_manip_ip_arp_purge_all); }
     break;
 
   case 68:
+
+/* Line 1455 of yacc.c  */
 #line 190 "cli_parser.y"
     { HELP(HELP_MANIP_IP_ARP_PURGE_ALL); }
     break;
 
   case 69:
+
+/* Line 1455 of yacc.c  */
 #line 191 "cli_parser.y"
     { SETC_FUNC0(cli_manip_ip_arp_purge_dyn); }
     break;
 
   case 70:
+
+/* Line 1455 of yacc.c  */
 #line 192 "cli_parser.y"
     { HELP(HELP_MANIP_IP_ARP_PURGE_DYN); }
     break;
 
   case 71:
+
+/* Line 1455 of yacc.c  */
 #line 193 "cli_parser.y"
     { SETC_FUNC0(cli_manip_ip_arp_purge_sta); }
     break;
 
   case 72:
+
+/* Line 1455 of yacc.c  */
 #line 194 "cli_parser.y"
     { HELP(HELP_MANIP_IP_ARP_PURGE_STA); }
     break;
 
   case 73:
+
+/* Line 1455 of yacc.c  */
 #line 197 "cli_parser.y"
     { HELP(HELP_MANIP_IP_ARP_ADD); }
     break;
 
   case 74:
+
+/* Line 1455 of yacc.c  */
 #line 198 "cli_parser.y"
     {ERR_IP}
     break;
 
   case 75:
+
+/* Line 1455 of yacc.c  */
 #line 198 "cli_parser.y"
     { HELP(HELP_MANIP_IP_ARP_ADD); }
     break;
 
   case 76:
+
+/* Line 1455 of yacc.c  */
 #line 199 "cli_parser.y"
     {ERR_MAC}
     break;
 
   case 77:
+
+/* Line 1455 of yacc.c  */
 #line 199 "cli_parser.y"
     { HELP(HELP_MANIP_IP_ARP_ADD); }
     break;
 
   case 78:
+
+/* Line 1455 of yacc.c  */
 #line 200 "cli_parser.y"
     { SETC_ARP(cli_manip_ip_arp_add,(yyvsp[(1) - (2)].ip),(yyvsp[(2) - (2)].mac)); }
     break;
 
   case 79:
+
+/* Line 1455 of yacc.c  */
 #line 201 "cli_parser.y"
     { HELP(HELP_MANIP_IP_ARP_ADD); }
     break;
 
   case 80:
+
+/* Line 1455 of yacc.c  */
 #line 204 "cli_parser.y"
     { HELP(HELP_MANIP_IP_ARP_DEL); }
     break;
 
   case 81:
+
+/* Line 1455 of yacc.c  */
 #line 205 "cli_parser.y"
     {ERR_IP}
     break;
 
   case 82:
+
+/* Line 1455 of yacc.c  */
 #line 205 "cli_parser.y"
     { HELP(HELP_MANIP_IP_ARP_DEL); }
     break;
 
   case 83:
+
+/* Line 1455 of yacc.c  */
 #line 206 "cli_parser.y"
     { SETC_ARP_IP(cli_manip_ip_arp_del,(yyvsp[(1) - (1)].ip)); }
     break;
 
   case 84:
+
+/* Line 1455 of yacc.c  */
 #line 207 "cli_parser.y"
     { HELP(HELP_MANIP_IP_ARP_DEL); }
     break;
 
   case 85:
+
+/* Line 1455 of yacc.c  */
 #line 210 "cli_parser.y"
     { HELP(HELP_MANIP_IP_INTF); }
     break;
 
   case 86:
+
+/* Line 1455 of yacc.c  */
 #line 211 "cli_parser.y"
     {ERR_INTF}
     break;
 
   case 87:
+
+/* Line 1455 of yacc.c  */
 #line 211 "cli_parser.y"
     { HELP(HELP_MANIP_IP_INTF); }
     break;
 
   case 88:
+
+/* Line 1455 of yacc.c  */
 #line 212 "cli_parser.y"
     { HELP(HELP_MANIP_IP_INTF); }
     break;
 
   case 89:
+
+/* Line 1455 of yacc.c  */
 #line 213 "cli_parser.y"
     {ERR_IP}
     break;
 
   case 90:
+
+/* Line 1455 of yacc.c  */
 #line 213 "cli_parser.y"
     { HELP(HELP_MANIP_IP_INTF_SET); }
     break;
 
   case 91:
+
+/* Line 1455 of yacc.c  */
 #line 214 "cli_parser.y"
     { SETC_INTF_SET(cli_manip_ip_intf_set,(yyvsp[(1) - (3)].string),(yyvsp[(2) - (3)].ip),(yyvsp[(3) - (3)].ip)); }
     break;
 
   case 92:
+
+/* Line 1455 of yacc.c  */
 #line 215 "cli_parser.y"
     { HELP(HELP_MANIP_IP_INTF_SET); }
     break;
 
   case 93:
+
+/* Line 1455 of yacc.c  */
 #line 216 "cli_parser.y"
     { SETC_INTF(cli_manip_ip_intf_up,(yyvsp[(1) - (2)].string)); }
     break;
 
   case 94:
+
+/* Line 1455 of yacc.c  */
 #line 217 "cli_parser.y"
     { HELP(HELP_MANIP_IP_INTF_UP); }
     break;
 
   case 95:
+
+/* Line 1455 of yacc.c  */
 #line 218 "cli_parser.y"
     { SETC_INTF(cli_manip_ip_intf_down,(yyvsp[(1) - (2)].string)); }
     break;
 
   case 96:
+
+/* Line 1455 of yacc.c  */
 #line 219 "cli_parser.y"
     { HELP(HELP_MANIP_IP_INTF_DOWN); }
     break;
 
   case 97:
+
+/* Line 1455 of yacc.c  */
 #line 222 "cli_parser.y"
     { HELP(HELP_MANIP_IP_OSPF);           }
     break;
 
   case 98:
+
+/* Line 1455 of yacc.c  */
 #line 223 "cli_parser.y"
     { SETC_FUNC0(cli_manip_ip_ospf_up);   }
     break;
 
   case 99:
+
+/* Line 1455 of yacc.c  */
 #line 224 "cli_parser.y"
     { HELP(HELP_MANIP_IP_OSPF_UP);        }
     break;
 
   case 100:
+
+/* Line 1455 of yacc.c  */
 #line 225 "cli_parser.y"
     { SETC_FUNC0(cli_manip_ip_ospf_down); }
     break;
 
   case 101:
+
+/* Line 1455 of yacc.c  */
 #line 226 "cli_parser.y"
     { HELP(HELP_MANIP_IP_OSPF_DOWN);      }
     break;
 
   case 102:
+
+/* Line 1455 of yacc.c  */
 #line 229 "cli_parser.y"
     { HELP(HELP_MANIP_IP_ROUTE); }
     break;
 
   case 105:
+
+/* Line 1455 of yacc.c  */
 #line 232 "cli_parser.y"
     { SETC_FUNC0(cli_manip_ip_route_purge_all); }
     break;
 
   case 106:
+
+/* Line 1455 of yacc.c  */
 #line 233 "cli_parser.y"
     { SETC_FUNC0(cli_manip_ip_route_purge_dyn); }
     break;
 
   case 107:
+
+/* Line 1455 of yacc.c  */
 #line 234 "cli_parser.y"
     { SETC_FUNC0(cli_manip_ip_route_purge_sta); }
     break;
 
   case 108:
+
+/* Line 1455 of yacc.c  */
 #line 235 "cli_parser.y"
     { HELP(HELP_MANIP_IP_ROUTE_PURGE_ALL); }
     break;
 
   case 109:
+
+/* Line 1455 of yacc.c  */
 #line 238 "cli_parser.y"
     { HELP(HELP_MANIP_IP_ROUTE_ADD); }
     break;
 
   case 110:
+
+/* Line 1455 of yacc.c  */
 #line 239 "cli_parser.y"
     {ERR_IP}
     break;
 
   case 111:
+
+/* Line 1455 of yacc.c  */
 #line 239 "cli_parser.y"
     { HELP(HELP_MANIP_IP_ROUTE_ADD); }
     break;
 
   case 112:
+
+/* Line 1455 of yacc.c  */
 #line 240 "cli_parser.y"
     {ERR_IP}
     break;
 
   case 113:
+
+/* Line 1455 of yacc.c  */
 #line 240 "cli_parser.y"
     { HELP(HELP_MANIP_IP_ROUTE_ADD); }
     break;
 
   case 114:
+
+/* Line 1455 of yacc.c  */
 #line 241 "cli_parser.y"
     {ERR_IP}
     break;
 
   case 115:
+
+/* Line 1455 of yacc.c  */
 #line 241 "cli_parser.y"
     { HELP(HELP_MANIP_IP_ROUTE_ADD); }
     break;
 
   case 116:
+
+/* Line 1455 of yacc.c  */
 #line 242 "cli_parser.y"
     {ERR_INTF}
     break;
 
   case 117:
+
+/* Line 1455 of yacc.c  */
 #line 242 "cli_parser.y"
     { HELP(HELP_MANIP_IP_ROUTE_ADD); }
     break;
 
   case 118:
+
+/* Line 1455 of yacc.c  */
 #line 243 "cli_parser.y"
     { SETC_RT_ADD(cli_manip_ip_route_add,(yyvsp[(1) - (4)].ip),(yyvsp[(2) - (4)].ip),(yyvsp[(3) - (4)].ip),(yyvsp[(4) - (4)].string)); }
     break;
 
   case 119:
+
+/* Line 1455 of yacc.c  */
 #line 244 "cli_parser.y"
     { HELP(HELP_MANIP_IP_ROUTE_ADD); }
     break;
 
   case 120:
+
+/* Line 1455 of yacc.c  */
 #line 247 "cli_parser.y"
     { HELP(HELP_MANIP_IP_ROUTE_DEL); }
     break;
 
   case 121:
+
+/* Line 1455 of yacc.c  */
 #line 248 "cli_parser.y"
     {ERR_IP}
     break;
 
   case 122:
+
+/* Line 1455 of yacc.c  */
 #line 248 "cli_parser.y"
     { HELP(HELP_MANIP_IP_ROUTE_DEL); }
     break;
 
   case 123:
+
+/* Line 1455 of yacc.c  */
 #line 249 "cli_parser.y"
     {ERR_IP}
     break;
 
   case 124:
+
+/* Line 1455 of yacc.c  */
 #line 249 "cli_parser.y"
     { HELP(HELP_MANIP_IP_ROUTE_DEL); }
     break;
 
   case 125:
+
+/* Line 1455 of yacc.c  */
 #line 250 "cli_parser.y"
     { SETC_RT(cli_manip_ip_route_del,(yyvsp[(1) - (2)].ip),(yyvsp[(2) - (2)].ip)); }
     break;
 
   case 126:
+
+/* Line 1455 of yacc.c  */
 #line 251 "cli_parser.y"
     { HELP(HELP_MANIP_IP_ROUTE_DEL); }
     break;
 
   case 133:
+
+/* Line 1455 of yacc.c  */
 #line 262 "cli_parser.y"
     { HELP(HELP_ACTION_PING); }
     break;
 
   case 134:
+
+/* Line 1455 of yacc.c  */
 #line 263 "cli_parser.y"
     {ERR_IP}
     break;
 
   case 135:
+
+/* Line 1455 of yacc.c  */
 #line 263 "cli_parser.y"
     { HELP(HELP_ACTION_PING); }
     break;
 
   case 136:
+
+/* Line 1455 of yacc.c  */
 #line 264 "cli_parser.y"
     { SETC_IP(cli_ping,(yyvsp[(1) - (1)].ip)); }
     break;
 
   case 137:
+
+/* Line 1455 of yacc.c  */
 #line 265 "cli_parser.y"
     { SETC_IP_INT(cli_ping_flood,(yyvsp[(2) - (2)].ip),100); }
     break;
 
   case 138:
+
+/* Line 1455 of yacc.c  */
 #line 266 "cli_parser.y"
     { HELP(HELP_ACTION_PING); }
     break;
 
   case 139:
+
+/* Line 1455 of yacc.c  */
 #line 267 "cli_parser.y"
     { SETC_IP_INT(cli_ping_flood,(yyvsp[(3) - (3)].ip),(yyvsp[(2) - (3)].intVal)); }
     break;
 
   case 140:
+
+/* Line 1455 of yacc.c  */
 #line 268 "cli_parser.y"
     { HELP(HELP_ACTION_PING); }
     break;
 
   case 141:
+
+/* Line 1455 of yacc.c  */
 #line 269 "cli_parser.y"
     { HELP(HELP_ACTION_PING); }
     break;
 
   case 142:
+
+/* Line 1455 of yacc.c  */
 #line 272 "cli_parser.y"
     { HELP(HELP_ACTION_TRACE); }
     break;
 
   case 143:
+
+/* Line 1455 of yacc.c  */
 #line 273 "cli_parser.y"
     {ERR_IP}
     break;
 
   case 144:
+
+/* Line 1455 of yacc.c  */
 #line 273 "cli_parser.y"
     { HELP(HELP_ACTION_TRACE); }
     break;
 
   case 145:
+
+/* Line 1455 of yacc.c  */
 #line 274 "cli_parser.y"
     { SETC_IP(cli_traceroute,(yyvsp[(1) - (1)].ip)); }
     break;
 
   case 146:
+
+/* Line 1455 of yacc.c  */
 #line 275 "cli_parser.y"
     { HELP(HELP_ACTION_TRACE); }
     break;
 
   case 147:
+
+/* Line 1455 of yacc.c  */
 #line 278 "cli_parser.y"
     { SETC_FUNC0(cli_date); }
     break;
 
   case 148:
+
+/* Line 1455 of yacc.c  */
 #line 279 "cli_parser.y"
     { HELP(HELP_ACTION_DATE); }
     break;
 
   case 149:
+
+/* Line 1455 of yacc.c  */
 #line 282 "cli_parser.y"
     { SETC_FUNC0(cli_exit); }
     break;
 
   case 150:
+
+/* Line 1455 of yacc.c  */
 #line 283 "cli_parser.y"
     { HELP(HELP_ACTION_EXIT); }
     break;
 
   case 151:
+
+/* Line 1455 of yacc.c  */
 #line 286 "cli_parser.y"
     { SETC_FUNC0(cli_shutdown); }
     break;
 
   case 152:
+
+/* Line 1455 of yacc.c  */
 #line 287 "cli_parser.y"
     { HELP(HELP_ACTION_SHUTDOWN); }
     break;
 
   case 153:
+
+/* Line 1455 of yacc.c  */
 #line 290 "cli_parser.y"
     { HELP(HELP_ACTION_HELP); }
     break;
 
   case 154:
+
+/* Line 1455 of yacc.c  */
 #line 291 "cli_parser.y"
     { HELP(HELP_ALL);         }
     break;
 
   case 155:
+
+/* Line 1455 of yacc.c  */
 #line 292 "cli_parser.y"
     {ERR_IGNORE}
     break;
 
   case 156:
+
+/* Line 1455 of yacc.c  */
 #line 292 "cli_parser.y"
     { HELP(HELP_ALL); }
     break;
 
   case 157:
+
+/* Line 1455 of yacc.c  */
 #line 293 "cli_parser.y"
     { HELP(HELP_SHOW ); }
     break;
 
   case 158:
+
+/* Line 1455 of yacc.c  */
 #line 294 "cli_parser.y"
     { HELP(HELP_SHOW_HW); }
     break;
 
   case 159:
+
+/* Line 1455 of yacc.c  */
 #line 295 "cli_parser.y"
     { HELP(HELP_SHOW_HW_ABOUT); }
     break;
 
   case 160:
+
+/* Line 1455 of yacc.c  */
 #line 296 "cli_parser.y"
     { HELP(HELP_SHOW_HW_ARP); }
     break;
 
   case 161:
+
+/* Line 1455 of yacc.c  */
 #line 297 "cli_parser.y"
     { HELP(HELP_SHOW_HW_INTF); }
     break;
 
   case 162:
+
+/* Line 1455 of yacc.c  */
 #line 298 "cli_parser.y"
     { HELP(HELP_SHOW_HW_ROUTE); }
     break;
 
   case 163:
+
+/* Line 1455 of yacc.c  */
 #line 299 "cli_parser.y"
     { HELP(HELP_SHOW_IP); }
     break;
 
   case 164:
+
+/* Line 1455 of yacc.c  */
 #line 300 "cli_parser.y"
     { HELP(HELP_SHOW_IP_ARP); }
     break;
 
   case 165:
+
+/* Line 1455 of yacc.c  */
 #line 301 "cli_parser.y"
     { HELP(HELP_SHOW_IP_INTF); }
     break;
 
   case 166:
+
+/* Line 1455 of yacc.c  */
 #line 302 "cli_parser.y"
     { HELP(HELP_SHOW_IP_ROUTE); }
     break;
 
   case 167:
+
+/* Line 1455 of yacc.c  */
 #line 303 "cli_parser.y"
     { HELP(HELP_SHOW_OPT); }
     break;
 
   case 168:
+
+/* Line 1455 of yacc.c  */
 #line 304 "cli_parser.y"
     { HELP(HELP_SHOW_OPT_VERBOSE); }
     break;
 
   case 169:
+
+/* Line 1455 of yacc.c  */
 #line 305 "cli_parser.y"
     { HELP(HELP_SHOW_OSPF); }
     break;
 
   case 170:
+
+/* Line 1455 of yacc.c  */
 #line 306 "cli_parser.y"
     { HELP(HELP_SHOW_OSPF_NEIGHBORS); }
     break;
 
   case 171:
+
+/* Line 1455 of yacc.c  */
 #line 307 "cli_parser.y"
     { HELP(HELP_SHOW_OSPF_TOPOLOGY); }
     break;
 
   case 172:
+
+/* Line 1455 of yacc.c  */
 #line 308 "cli_parser.y"
     { HELP(HELP_SHOW_VNS); }
     break;
 
   case 173:
+
+/* Line 1455 of yacc.c  */
 #line 309 "cli_parser.y"
     { HELP(HELP_SHOW_VNS_LHOST); }
     break;
 
   case 174:
+
+/* Line 1455 of yacc.c  */
 #line 310 "cli_parser.y"
     { HELP(HELP_SHOW_VNS_TOPOLOGY); }
     break;
 
   case 175:
+
+/* Line 1455 of yacc.c  */
 #line 311 "cli_parser.y"
     { HELP(HELP_SHOW_VNS_USER); }
     break;
 
   case 176:
+
+/* Line 1455 of yacc.c  */
 #line 312 "cli_parser.y"
     { HELP(HELP_SHOW_VNS_VHOST); }
     break;
 
   case 177:
+
+/* Line 1455 of yacc.c  */
 #line 313 "cli_parser.y"
     { HELP(HELP_MANIP_IP); }
     break;
 
   case 178:
+
+/* Line 1455 of yacc.c  */
 #line 314 "cli_parser.y"
     { HELP(HELP_MANIP_IP_ARP); }
     break;
 
   case 179:
+
+/* Line 1455 of yacc.c  */
 #line 315 "cli_parser.y"
     { HELP(HELP_MANIP_IP_ARP_ADD); }
     break;
 
   case 180:
+
+/* Line 1455 of yacc.c  */
 #line 316 "cli_parser.y"
     { HELP(HELP_MANIP_IP_ARP_DEL); }
     break;
 
   case 181:
+
+/* Line 1455 of yacc.c  */
 #line 317 "cli_parser.y"
     { HELP(HELP_MANIP_IP_ARP_PURGE_ALL); }
     break;
 
   case 182:
+
+/* Line 1455 of yacc.c  */
 #line 318 "cli_parser.y"
     { HELP(HELP_MANIP_IP_ARP_PURGE_DYN); }
     break;
 
   case 183:
+
+/* Line 1455 of yacc.c  */
 #line 319 "cli_parser.y"
     { HELP(HELP_MANIP_IP_ARP_PURGE_STA); }
     break;
 
   case 184:
+
+/* Line 1455 of yacc.c  */
 #line 320 "cli_parser.y"
     { HELP(HELP_MANIP_IP_INTF); }
     break;
 
   case 185:
+
+/* Line 1455 of yacc.c  */
 #line 321 "cli_parser.y"
     { HELP(HELP_MANIP_IP_INTF_DOWN); }
     break;
 
   case 186:
+
+/* Line 1455 of yacc.c  */
 #line 322 "cli_parser.y"
     { HELP(HELP_MANIP_IP_INTF_UP); }
     break;
 
   case 187:
+
+/* Line 1455 of yacc.c  */
 #line 323 "cli_parser.y"
     { HELP(HELP_MANIP_IP_ROUTE); }
     break;
 
   case 188:
+
+/* Line 1455 of yacc.c  */
 #line 324 "cli_parser.y"
     { HELP(HELP_MANIP_IP_ROUTE_ADD); }
     break;
 
   case 189:
+
+/* Line 1455 of yacc.c  */
 #line 325 "cli_parser.y"
     { HELP(HELP_MANIP_IP_ROUTE_DEL); }
     break;
 
   case 190:
+
+/* Line 1455 of yacc.c  */
 #line 326 "cli_parser.y"
     { HELP(HELP_MANIP_IP_ROUTE_PURGE_ALL); }
     break;
 
   case 191:
+
+/* Line 1455 of yacc.c  */
 #line 327 "cli_parser.y"
     { HELP(HELP_MANIP_IP_ROUTE_PURGE_DYN); }
     break;
 
   case 192:
+
+/* Line 1455 of yacc.c  */
 #line 328 "cli_parser.y"
     { HELP(HELP_MANIP_IP_ROUTE_PURGE_STA); }
     break;
 
   case 193:
+
+/* Line 1455 of yacc.c  */
 #line 329 "cli_parser.y"
     { HELP(HELP_ACTION_DATE); }
     break;
 
   case 194:
+
+/* Line 1455 of yacc.c  */
 #line 330 "cli_parser.y"
     { HELP(HELP_ACTION_EXIT); }
     break;
 
   case 195:
+
+/* Line 1455 of yacc.c  */
 #line 331 "cli_parser.y"
     { HELP(HELP_ACTION_PING); }
     break;
 
   case 196:
+
+/* Line 1455 of yacc.c  */
 #line 332 "cli_parser.y"
     { HELP(HELP_ACTION_SHUTDOWN); }
     break;
 
   case 197:
+
+/* Line 1455 of yacc.c  */
 #line 333 "cli_parser.y"
     { HELP(HELP_ACTION_TRACE); }
     break;
 
   case 198:
+
+/* Line 1455 of yacc.c  */
 #line 334 "cli_parser.y"
     { HELP(HELP_OPT); }
     break;
 
   case 199:
+
+/* Line 1455 of yacc.c  */
 #line 335 "cli_parser.y"
     { HELP(HELP_OPT_VERBOSE); }
     break;
 
   case 200:
+
+/* Line 1455 of yacc.c  */
 #line 336 "cli_parser.y"
     { HELP(HELP_OPT); }
     break;
 
   case 201:
+
+/* Line 1455 of yacc.c  */
 #line 337 "cli_parser.y"
     { HELP(HELP_OPT_VERBOSE); }
     break;
 
   case 202:
+
+/* Line 1455 of yacc.c  */
 #line 338 "cli_parser.y"
     {ERR_IGNORE}
     break;
 
   case 203:
+
+/* Line 1455 of yacc.c  */
 #line 338 "cli_parser.y"
     { HELP(HELP_ACTION_HELP); }
     break;
 
   case 207:
+
+/* Line 1455 of yacc.c  */
 #line 348 "cli_parser.y"
     { gopt.on = 1; }
     break;
 
   case 208:
+
+/* Line 1455 of yacc.c  */
 #line 349 "cli_parser.y"
     { gopt.on = 0; }
     break;
 
   case 209:
+
+/* Line 1455 of yacc.c  */
 #line 352 "cli_parser.y"
     { HELP(HELP_OPT); }
     break;
 
   case 210:
+
+/* Line 1455 of yacc.c  */
 #line 353 "cli_parser.y"
     { SETC_OPT(cli_opt_verbose); }
     break;
 
   case 211:
+
+/* Line 1455 of yacc.c  */
 #line 354 "cli_parser.y"
     { HELP(HELP_OPT_VERBOSE); }
     break;
 
   case 212:
+
+/* Line 1455 of yacc.c  */
 #line 357 "cli_parser.y"
     { SETC_FUNC0(cli_show_opt); }
     break;
 
   case 213:
+
+/* Line 1455 of yacc.c  */
 #line 358 "cli_parser.y"
     { SETC_FUNC0(cli_show_opt_verbose); }
     break;
 
   case 214:
+
+/* Line 1455 of yacc.c  */
 #line 359 "cli_parser.y"
     { HELP(HELP_SHOW_OPT_VERBOSE); }
     break;
 
   case 215:
+
+/* Line 1455 of yacc.c  */
 #line 360 "cli_parser.y"
     { HELP(HELP_SHOW_OPT); }
     break;
 
 
-/* Line 1267 of yacc.c.  */
-#line 2671 "y.tab.c"
+
+/* Line 1455 of yacc.c  */
+#line 3044 "y.tab.c"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -2677,7 +3050,6 @@ yyreduce:
   YY_STACK_PRINT (yyss, yyssp);
 
   *++yyvsp = yyval;
-
 
   /* Now `shift' the result of the reduction.  Determine what state
      that goes to, based on the state we popped back to and the rule
@@ -2743,7 +3115,7 @@ yyerrlab:
 
   if (yyerrstatus == 3)
     {
-      /* If just tried and failed to reuse look-ahead token after an
+      /* If just tried and failed to reuse lookahead token after an
 	 error, discard it.  */
 
       if (yychar <= YYEOF)
@@ -2760,7 +3132,7 @@ yyerrlab:
 	}
     }
 
-  /* Else will try to reuse look-ahead token after shifting the error
+  /* Else will try to reuse lookahead token after shifting the error
      token.  */
   goto yyerrlab1;
 
@@ -2817,9 +3189,6 @@ yyerrlab1:
       YY_STACK_PRINT (yyss, yyssp);
     }
 
-  if (yyn == YYFINAL)
-    YYACCEPT;
-
   *++yyvsp = yylval;
 
 
@@ -2844,7 +3213,7 @@ yyabortlab:
   yyresult = 1;
   goto yyreturn;
 
-#ifndef yyoverflow
+#if !defined(yyoverflow) || YYERROR_VERBOSE
 /*-------------------------------------------------.
 | yyexhaustedlab -- memory exhaustion comes here.  |
 `-------------------------------------------------*/
@@ -2855,7 +3224,7 @@ yyexhaustedlab:
 #endif
 
 yyreturn:
-  if (yychar != YYEOF && yychar != YYEMPTY)
+  if (yychar != YYEMPTY)
      yydestruct ("Cleanup: discarding lookahead",
 		 yytoken, &yylval);
   /* Do not reclaim the symbols of the rule which action triggered
@@ -2881,6 +3250,8 @@ yyreturn:
 }
 
 
+
+/* Line 1675 of yacc.c  */
 #line 362 "cli_parser.y"
 
 

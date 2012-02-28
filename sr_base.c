@@ -42,6 +42,9 @@
 #include <pthread.h>
 #include <sys/types.h>
 
+#include "cli/cli_main.h"
+
+
 #ifdef _LINUX_
 #include <getopt.h>
 #endif /* _LINUX_ */
@@ -140,6 +143,8 @@ int sr_init_low_level_subystem(int argc, char **argv)
     static struct sr_instance* sr = 0;
 
     int c;
+    
+    uint16_t cli_port;
 
     if ( sr )
     {
@@ -150,7 +155,7 @@ int sr_init_low_level_subystem(int argc, char **argv)
 
     sr = (struct sr_instance*) malloc(sizeof(struct sr_instance));
 
-    while ((c = getopt(argc, argv, "hna:s:v:p:t:r:l:i:u:")) != EOF)
+    while ((c = getopt(argc, argv, "hna:s:v:c:p:t:r:l:i:u:")) != EOF)
     {
         switch (c)
         {
@@ -176,6 +181,9 @@ int sr_init_low_level_subystem(int argc, char **argv)
             case 'r':
                 rtable = optarg;
                 break;
+            /*case 'c':
+               cli_port = atoi((char *) optarg);
+               break;*/
             case 's':
                 server = optarg;
                 break;
@@ -206,7 +214,13 @@ int sr_init_low_level_subystem(int argc, char **argv)
     Debug(" \n ");
 #endif /* _CPUMODE_ */
     Debug("\n\n");
-
+  /* if(cli_port == 0){
+      cli_port = 2300;     //default
+   }
+   printf("\n\n****          SETTING CLI PORT TO %hu\n\n\n", cli_port);
+   if( cli_main( cli_port ) == CLI_ERROR )
+      fprintf( stderr, "Error: unable to setup the command-line interface server\n" );
+*/
     /* -- required by lwip, must be called from the main thread -- */
     sys_thread_init();
 
