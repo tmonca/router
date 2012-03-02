@@ -11,6 +11,8 @@
 #include "helper.h"
 #include "socket_helper.h"       /* writenstr()                       */
 #include "../sr_base_internal.h" /* struct sr_instance                */
+#include "cli_arp.h"             /* for CLI ARP commands              */
+
 
 /* temporary */
 #include "cli_stubs.h"

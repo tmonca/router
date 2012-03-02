@@ -35,13 +35,13 @@ struct arp_cache_list{
 };
 
 void add_cache_entry(struct sr_instance*, uint32_t, uint8_t MAC[6], time_t);
-void add_static_entry(struct sr_instance*, uint32_t, uint8_t MAC[6], time_t);
+int add_static_entry(struct sr_instance*, uint32_t, uint8_t MAC[6]);
 
-uint8_t* find_mac_in_cache(struct sr_instance*, uint32_t);
+uint8_t* find_mac_in_cache(struct sr_instance*, uint32_t, unsigned int);
 int find_and_update(struct sr_instance*, uint32_t, uint8_t MAC[6], time_t);
 
 int get_cache_length(struct sr_instance*, unsigned int);
-int remove_cache_entry(struct sr_instance*, uint32_t);
+int remove_cache_entry(struct sr_instance*, uint32_t, unsigned int);
 
 int delete_arp_cache(struct sr_instance*);
 int delete_static_cache(struct sr_instance*);

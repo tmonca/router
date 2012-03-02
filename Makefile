@@ -25,7 +25,8 @@ PURIFY= purify ${PFLAGS}
 
 RESTRICTED_CLI_SRCS = cli/cli.c cli/cli_help.c cli/cli_main.c \
                       cli/search_state.c cli/cli_local.c \
-                      cli/lex.yy.c cli/y.tab.c cli/helper.c
+                      cli/lex.yy.c cli/y.tab.c cli/helper.c \
+		      cli/cli_arp.c 
 CLI_SRCS = cli/socket_helper.c $(RESTRICTED_CLI_SRCS)  sr_lwtcp_glue.c
 CLI_OBJS = $(patsubst cli/%.c, %.o, $(CLI_SRCS))
 

@@ -44,7 +44,6 @@ struct send_list* send_list_new();
 
 int send_list_send(struct send_list*, struct sr_instance*, uint32_t*, uint8_t*);
 
-
 void send_list_add(struct send_list**, uint32_t, uint8_t*, unsigned int, char*, uint16_t, time_t);
 
 int send_packet(struct sr_instance*, char*, uint8_t*, uint8_t*, unsigned int, uint16_t);

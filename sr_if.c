@@ -197,3 +197,24 @@ void sr_print_if(struct sr_vns_if* iface)
     Debug("\n");
     Debug("\tinet addr %s\n",inet_ntoa(ip_addr));
 } /* -- sr_print_if -- */
+
+struct sr_vns_if* find_interface(struct sr_instance* sr, uint32_t IP){
+   //step through the list trying to find IP, then return name
+   struct sr_vns_if* if_walker = 0;
+   assert(sr);
+   struct sr_router* sub = (struct sr_router*)sr_get_subsystem(sr);
+   assert(sub);
+   if_walker = sub->if_list;
+   while(if_walker)
+   {
+         if(if_walker->ip == IP)
+            { return if_walker; }
+         if_walker = if_walker->next;
+   }
+              
+   return 0;
+
+}
+
+
+

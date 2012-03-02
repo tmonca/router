@@ -144,16 +144,15 @@ int handle_ip_pkt(struct sr_instance* sr, uint8_t* Pkt, char* interface, unsigne
    
    if(check_my_interface(sr, (uint32_t)pktHdr->ip_dst.s_addr)){ 
       
-      printf("This is my packet so I will process it\n");
+     // printf("This is my packet so I will process it\n");
       
       switch(pktHdr->ip_p) {
-         case IPPROTO_ICMP:
-            printf("\nThis is an IP ICMP packet of length %d\n", len);
+         case IPPROTO_ICMP:;
+            //printf("\nThis is an IP ICMP packet of length %d\n", len);
+            // printf("After removing the IP header we are left with %d bytes\n", datalen);
             int datalen = len - sizeof(struct ip);
-            printf("After removing the IP header we are left with %d bytes\n", datalen);
             uint8_t* ICMP = (uint8_t*) malloc_or_die(datalen);
             //ICMP = array_cpy(Pkt->payload, datalen);
-            
             memcpy(ICMP, payload, datalen);
             int tmp;
             tmp = process_ICMP_pkt(sr, interface, originIP, ICMP, datalen); 
@@ -168,7 +167,7 @@ int handle_ip_pkt(struct sr_instance* sr, uint8_t* Pkt, char* interface, unsigne
       }
    }
    else{
-      printf("**********  Not my packet, so I will forward it\n");
+      //printf("**********  Not my packet, so I will forward it\n");
       return 3;
    }
    return 0;
@@ -193,7 +192,7 @@ int process_ICMP_pkt(struct sr_instance* sr, char* interface, uint32_t srcIP, ui
       //return -2;
    }
 
-#if 1   
+#if 0   
    printf("********* at %s    ICMP Packet is 0x ", __func__);
    int i ;
    for(i = 0; i < len; i++){
@@ -205,7 +204,7 @@ int process_ICMP_pkt(struct sr_instance* sr, char* interface, uint32_t srcIP, ui
    
    struct sr_icmp_hdr* tmpH = (struct sr_icmp_hdr*) malloc_or_die(sizeof(struct sr_icmp_hdr));
    tmpH = (struct sr_icmp_hdr*)packet;
-   printf("@@@@@@@@@@   CHECKSUM 0x%x \n", tmpH->checksum);
+   //printf("@@@@@@@@@@   CHECKSUM 0x%x \n", tmpH->checksum);
    
    uint16_t field1 = tmpH->field1;
    uint16_t field2 = tmpH->field2;
@@ -320,7 +319,7 @@ int create_ICMP_pkt(struct sr_instance* sr, char* interface, uint32_t dstIP, uin
 /*--------------------------------------------------------------------- 
  * Method: make_and_send(struct sr_instance sr, char * interface, uint32_t dstIP, uint8_t* payld)
  *
- * payld is what yhe IP packet will carry. len is actual length. We can assemble IP pkt
+ * payld is what the IP packet will carry. len is actual length. We can assemble IP pkt
  * We will use ARP to look up the dst mac
  * Then we assemble ethernet frame
  *
@@ -399,7 +398,7 @@ test = longest_prefix(sr, ntohl(dstIP));
    for(i = 0; i < len + 20; i++){
       printf("%hhx ", packet[i]);
    }
-   printf("\n*************      %s     ******************\n", __func__);
+   //printf("\n*************      %s     ******************\n", __func__);
    
 #endif
    rtn = arp_lookup(sr, interface, packet, dstIP, (len + 20));

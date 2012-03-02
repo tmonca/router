@@ -26,6 +26,7 @@
 #include "sr_protocol.h"
 #include "sr_help.h"
 #include "sr_lpm.h"
+#include "sr_if.h"
 
 #ifdef _CPUMODE_
 #include "sr_cpu_extension_nf2.h"
@@ -63,7 +64,6 @@ void sr_integ_init(struct sr_instance* sr)
        printf("@@@@@@@@@@@@@@@@@@@@@@@@    FAILED TO LOAD ROUTING TABLE\n");
     }
     
-    //subsystem->arp_cache = (struct arp_cache_list*)malloc_or_die(sizeof(struct arp_cache_list));
     subsystem->waitSend = (struct send_list*)malloc_or_die(sizeof(struct send_list));
     subsystem->lock = (pthread_mutex_t*)malloc_or_die(sizeof(pthread_mutex_t));
     
@@ -291,24 +291,13 @@ void sr_integ_destroy(struct sr_instance* sr)
 
 uint32_t sr_integ_findsrcip(uint32_t dest /* nbo */)
 {
-    fprintf(stderr, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-    fprintf(stderr, "!!! Tranport layer called ip_findsrcip(..) this must be !!!\n");
-    fprintf(stderr, "!!! defined to return the correct source address        !!!\n");
-    fprintf(stderr, "!!! given a destination                                 !!!\n ");
-    fprintf(stderr, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
 
-    assert(0);
-
-    /* --
-     * e.g.
-     *
-     * struct sr_instance* sr = sr_get_global_instance();
-     * struct my_router* mr = (struct my_router*)
-     *                              sr_get_subsystem(sr);
-     * return my_findsrcip(mr, dest);
-     * -- */
-
-    return 0;
+    struct sr_instance* sr = sr_get_global_instance(NULL);
+    assert(sr);
+    struct sr_vns_if* intf = sr_get_interface(sr, longest_prefix(sr, dest));
+    uint32_t src = intf->ip;
+    
+    return src;
 } /* -- ip_findsrcip -- */
 
 /*-----------------------------------------------------------------------------
@@ -326,22 +315,18 @@ uint32_t sr_integ_ip_output(uint8_t* payload /* given */,
                             uint32_t dest, /* nbo */
                             int len)
 {
-    fprintf(stderr, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-    fprintf(stderr, "!!! Tranport layer called sr_integ_ip_output(..)        !!!\n");
-    fprintf(stderr, "!!! this must be defined to handle the network          !!!\n ");
-    fprintf(stderr, "!!! level functionality of transport packets            !!!\n ");
-    fprintf(stderr, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+      assert(payload);
 
-    assert(0);
-
-    /* --
-     * e.g.
-     *
-     * struct sr_instance* sr = sr_get_global_instance();
-     * struct my_router* mr = (struct my_router*)
-     *                              sr_get_subsystem(sr);
-     * return my_ip_output(mr, payload, proto, src, dest, len);
-     * -- */
+    struct sr_instance* sr = sr_get_global_instance(NULL);
+    assert(sr);
+    //struct sr_router* sub = (struct sr_router*)sr_get_subsystem(sr);
+    
+    struct sr_vns_if* intf = find_interface(sr, src);
+    printf("\nWe found interface %s. ", intf->name);
+    print_ip(intf->ip);
+    printf(". We were lookign for");
+    print_ip(src);
+    return make_and_send(sr, intf->name, dest, payload, len, proto);
 
     return 0;
 } /* -- ip_integ_route -- */

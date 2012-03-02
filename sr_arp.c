@@ -39,23 +39,23 @@ void add_cache_entry(struct sr_instance* sr, uint32_t IP, uint8_t MAC[6], time_t
  then returns the pointer to the new entry
  */
 
-void add_static_entry(struct sr_instance* sr, uint32_t IP, uint8_t MAC[6], time_t created){
+int add_static_entry(struct sr_instance* sr, uint32_t IP, uint8_t MAC[6]){
    assert(sr);
    struct sr_router* subs = (struct sr_router*)sr_get_subsystem(sr);
    assert(subs);
    struct arp_cache_list* new_entry = (struct arp_cache_list*) malloc_or_die(sizeof(struct arp_cache_list));
    new_entry->IP = IP;
    mac_copy(MAC, new_entry->MAC);
-   new_entry->created = created;
    
    if(subs->arp_cache_static == NULL){ /* there was no pre-extant cache*/
       new_entry->next = NULL;
       subs->arp_cache_static = new_entry;
-      return;
+      return 2;
    }
    //headRef = &subs->arp_cache;
    new_entry->next = subs->arp_cache_static;
    subs->arp_cache_static = new_entry;
+   return 1;
    
 }
 
@@ -98,12 +98,17 @@ int find_and_update(struct sr_instance* sr, uint32_t IP, uint8_t MAC[6], time_t 
   
 }
 
-uint8_t* find_mac_in_cache(struct sr_instance* sr, uint32_t IP){
+uint8_t* find_mac_in_cache(struct sr_instance* sr, uint32_t IP, unsigned int type){
    assert(sr);
    struct sr_router* subs = (struct sr_router*)sr_get_subsystem(sr);
    assert(subs);
    struct arp_cache_list* head = (struct arp_cache_list*)malloc_or_die(sizeof(struct arp_cache_list));
-   head = subs->arp_cache;
+   if(type = 0){
+      head = subs->arp_cache_static;
+   }
+   else{
+      head = subs->arp_cache;
+   }
    unsigned char* MAC = (unsigned char*) malloc_or_die(6* sizeof(unsigned char));
   
    while (head != NULL){
@@ -154,22 +159,54 @@ int get_cache_length(struct sr_instance* sr, unsigned int type){
 
 /* remove all entries with this IP address
  returns the number of entries removed
+ 
+ Type 0 = static, Type 1 dynamic
  */
 
-int remove_cache_entry(struct sr_instance* sr, uint32_t IP){
+int remove_cache_entry(struct sr_instance* sr, uint32_t IP, unsigned int type){
   assert(sr);
   struct sr_router* sub = (struct sr_router*)sr_get_subsystem(sr);
   assert(sub);
   int count = 0;
-  struct arp_cache_list* current = head;
-  while (current != NULL){
-    if(current->next->IP == IP){
-      //remove it
-      current->next = current->next->next;
-      count++;
-    }
+  struct arp_cache_list* prev;
+  struct arp_cache_list* current;
+  if(type == 0){
+      prev = sub->arp_cache_static;
+      if(prev->IP == IP){
+         free(prev);
+         sub->arp_cache_static = NULL;
+         return 1;
+      }
+      current = prev->next;
+  
+     while (current != NULL){
+        if(current->IP == IP){
+           prev->next = current->next;
+           count++;
+        }
+        current = current->next;
+     }
+     return count;
   }
-  return count;
+  else{
+      prev = sub->arp_cache;
+      if(prev->IP == IP){
+         free(prev);
+         sub->arp_cache = NULL;
+         return 1;
+      }
+      current = prev->next;
+      
+      while (current != NULL){
+         if(current->IP == IP){
+            prev->next = current->next;
+            count++;
+         }
+         current = current->next;
+      }
+      return count;
+   }
+   return 0;
 }
 
 /***********************************************
@@ -180,21 +217,52 @@ int remove_cache_entry(struct sr_instance* sr, uint32_t IP){
 *  commands in cli.
 ************************************************/
 
-int delete_arp_cache(struct sr_instance*){
+int delete_arp_cache(struct sr_instance* sr){
    assert(sr);
    struct sr_router* sub = (struct sr_router*)sr_get_subsystem(sr);
    assert(sub);
    int count = 0;
-   
-   
+   struct arp_cache_list* step;
+   struct arp_cache_list* prev;
+   step = sub->arp_cache;   
+   if(step != NULL){
+      prev=step;
+      step=step->next;
+      count++;
+      while(step != NULL){
+         free(prev);
+         prev = step;         
+         step = step->next;
+         count++;
+      }
+      sub->arp_cache = NULL;
+      return count;
+   }
    return 0;
 }
-int delete_static_cache(struct sr_instance*){
+int delete_static_cache(struct sr_instance* sr){
    assert(sr);
    struct sr_router* sub = (struct sr_router*)sr_get_subsystem(sr);
    assert(sub);
    int count = 0;
-   
+   struct arp_cache_list* step;
+   struct arp_cache_list* prev;
+   step = sub->arp_cache_static;   
+   if(step != NULL){
+      prev=step;
+      step=step->next;
+      count++;
+      while(step != NULL){
+         free(prev);
+         prev = step;         
+         step = step->next;
+         count++;
+      }
+      sub->arp_cache_static = NULL;
+      return count;
+   }
+   return 0;
+
    
    return 0;
 }
@@ -352,7 +420,10 @@ int arp_lookup(struct sr_instance * sr, char* interface, uint8_t* payload, uint3
    printf("\n");
 #endif   
    uint8_t* dst;
-   dst = find_mac_in_cache(sr, dstIP);
+   dst = find_mac_in_cache(sr, dstIP, 0);
+   if(dst == NULL){
+      dst = find_mac_in_cache(sr, dstIP, 1);
+   }
    if(dst != NULL){
       mac_copy(dst, ethHdr->ether_dhost);
       mac_copy(intf->addr, ethHdr->ether_shost);
@@ -449,7 +520,7 @@ int send_arp_request(struct sr_instance * sr, char* iface, uint8_t* payload, uin
 #if 1
 void arp_cache_cleanup(struct sr_instance *sr){
    
-   struct sr_router* sub = (struct sr_router*)sr_get_subsystem(sr);   /*garbage collect  */
+   //struct sr_router* sub = (struct sr_router*)sr_get_subsystem(sr);   /*garbage collect  */
    while (1) {
       assert(sr);
       struct sr_router* sub = (struct sr_router*)sr_get_subsystem(sr);
@@ -460,17 +531,16 @@ void arp_cache_cleanup(struct sr_instance *sr){
       int done = 1; 
       int count;
       /* so what do we need to do to garbage collect?*/
-      printf("PEEKABOO !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
       done = nanosleep(&delay, &remains);
       if(done == 0) {
          count = get_cache_length(sr, 1);
          pthread_mutex_lock(sub->lock);
          printf("@ * GARBAGE COLLECTION * @\n");
          time_t now = time(NULL);
-         time_t then;
+         //time_t then;
          struct arp_cache_list* step;
          struct arp_cache_list* prev;
-         struct arp_cache_list* tmp;
+         //struct arp_cache_list* tmp;
          step = sub->arp_cache;
          prev = sub->arp_cache;
          while(step != NULL){
